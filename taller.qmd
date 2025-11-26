@@ -176,15 +176,19 @@ g_seed = 42
 # timeout = 60
 ```
 
-## 7. Prompts
+## Prompts
 
 Cuando diseñamos prompts buscamos, por lo general, la respuesta a cierta pregunta o la resolución de algún problema. Además, la forma en la que diseñamos un prompt influye estructuralmente en la respuesta que podamos recibir de un modelo de LLM. En el presente taller haremos el ejercicio interactivo de intentar responder a la siguiente pregunta de investigación: *¿Cómo se configura la construcción social y mediática de la Inteligencia Artificial en el discurso noticioso actual en medios de prensa escritos de alto impacto en Chile?*
 
-En estricto rigor, Gemini no permite que le pasemos instrucciones de sistema, petición de texto y estructuras de respuesta por separado. Nosotros en este caso los separamos en objetos distintos solo para hacerlo más modificable y separar bien las partes del prompt. Tenemos en este caso 3 partes, para comenzar a moldear las respuestas dependiendo de nuestro caso específico de estudio:
+En estricto rigor, Gemini no permite que le pasemos instrucciones de sistema, petición de texto y estructuras de respuesta por separado. Nosotros en este caso los separamos en objetos distintos solo para hacerlo más modular. Tenemos en este caso 3 partes, para comenzar a moldear las respuestas dependiendo de nuestro caso específico de estudio:
 
-1.  **system_prompt:** La idea es darle una idea específica de como "qué tipo de persona" tiene que comportarse y qué campos de conocimientos debe manejar para responder (es distinto preguntarle de inteligencia artifial a un experto en ciencias de la computación o a un periodista). Podemos utilizar este recurso para delimitar ciertos marcos teóricos y disciplinares al momento de esperar una respuesta.
+1.  **system_prompt:** La idea es darle una idea específica de como "qué tipo de persona" tiene que comportarse y qué campos de conocimientos debe manejar para responder (es distinto preguntarle de inteligencia artificial a un experto en ciencias de la computación o a un periodista). Podemos utilizar este recurso para delimitar ciertos marcos teóricos y disciplinares al momento de esperar una respuesta.
 
-2.  **prompt_instruccion:** Como su nombre lo dice, las instrucciones específicas
+2.  **prompt_instruccion:** Como su nombre lo dice, las instrucciones específicas. En nuestro caso, aquí es donde operacionalizamos la pregunta de investigación. Debemos indicarle explícitamente al modelo qué dimensiones teóricas debe buscar. Aquí traducimos conceptos abstractos (como la construcción social o el encuadre mediático) en directrices concretas: evaluar si la tecnología se presenta como amenaza u oportunidad (tecnofobia/tecnofilia), identificar qué actores tienen voz (autoridad experta vs. sociedad civil) y detectar los sesgos latentes. Básicamente, esta sección funciona como nuestro libro de códigos o pauta de análisis cualitativo, asegurando que el modelo no divague, sino que interrogue al texto periodístico con un propósito definido.
+
+3.  **json_estructura:** Finalmente, definimos el formato de salida. Aunque el análisis sea cualitativo, necesitamos sistematizar la información para poder trabajarla a escala en R. Al exigir una respuesta en formato JSON estricto, forzamos al modelo a sintetizar su razonamiento complejo en una estructura de datos legible por la máquina. En otras palabras, transformar cientos de análisis de texto individuales en un dataframe. Gracias a esto, podremos posteriormente calcular frecuencias, correlacionar variables (por ej. *¿un medio es más tecnofílico que otro? ¿los medios de la capital son más tecnofílicos que los de regiones rurales?*) y visualizar los hallazgos de nuestra investigación de manera cuantitativa.
+
+Nuestro propósito aquí es mostrar la estructura que usamos para que un LLM siga nuestras instrucciones como queremos, pero para cada caso de uso el tipo de prompt, los marcos teóricos, preguntas específicas y estructura de respuesta que pidamos será distinta.
 
 ```{r}
 system_prompt <- "Eres un científico social experto en análisis cualitativo con formación interdisciplinaria en sociología, antropología, ciencias políticas y ciencias de la comunicación. Tienes amplia experiencia en investigación de medios, análisis de discurso, estudios culturales y semiótica social. Posees la capacidad de examinar contenido mediático desde múltiples perspectivas teóricas, identificando marcos narrativos e interpretativos, agendas mediáticas, construcciones simbólicas y procesos de significación. Mantienes una perspectiva académica rigurosa y pensamiento crítico interdisciplinario."
@@ -199,13 +203,13 @@ Requisitos para el análisis:
 - Examina cómo se representa la IA: sus capacidades, limitaciones, riesgos o beneficios
 - Analiza los marcos interpretativos y narrativos utilizados para contextualizar la tecnología
 - Detecta sesgos, omisiones o énfasis particulares en la construcción del discurso sobre IA
-- Considera las implicaciones sociales, económicas o éticas planteadas
+- Considera las implicaciones sociales, económicas, políticas o éticas planteadas
 - Identifica actores sociales mencionados y sus posiciones respecto a la IA
 - Evalúa qué perspectivas están presentes o ausentes en el debate
 - Genera keywords conceptuales que capturen la esencia sociológica del contenido
 - Proporciona un resumen analítico que sintetice los hallazgos principales
 
-Mantén un enfoque crítico y académico, fundamentando tus observaciones en el contenido analizado."
+Mantén un enfoque crítico y académico, fundamentando tus observaciones únicamente en el contenido analizado."
 
 json_estructura <- 'Responde exclusivamente en formato JSON válido. Tu respuesta debe ser ÚNICAMENTE así, comenzando con "{" y terminando con "}". 
 
@@ -213,8 +217,9 @@ json_estructura <- 'Responde exclusivamente en formato JSON válido. Tu respuest
 
 Consideraciones:
   - Las keywords deben ser 5, ir en minúsculas y si se componen de más de una palabra llevan espacios entre ellas.
-  . Deben ser 5 actores principales, si no existe alguno entrega el campo igualmente con NULL.
-  - Label: Máximo 3 palabras.
+  - Deben ser 5 actores principales, si no existe alguno entrega el campo igualmente con NULL.
+  - Si el rol de un actor no está relacionado con la IA indícalo explícitamente.
+  - Label: Máximo 3 palabras. Si la IA no es central en la noticia, los labels no deben estar relacionados con la IA.
 
 Estructura:
 
@@ -234,10 +239,12 @@ Estructura:
 '
 ```
 
-## 9. Función para crear promt
+## Función para crear prompt pasándole las noticias
+
+Aquí concatenamos las partes del prompt que hicimos antes y le entregamos un *input* estructurado al LLM, pasándole el título y el contenido de la noticia. Al final imprimimos el resultado del prompt para una sola fila.
 
 ```{r}
-# Función 1: Crear prompt completo con contexto
+# Crear prompt completo con contexto
 crear_prompt_completo <- function(fila_noticia) {
   # Extraer información de la fila
   titulo <- fila_noticia$titulo
@@ -246,10 +253,8 @@ crear_prompt_completo <- function(fila_noticia) {
   
   # Crear contexto de la noticia
   contexto_noticia <- paste0(
-    "# **Para responder básate únicamente en el contenido de la noticia a analizar.** \n",
-    "CONTEXTO DE LA NOTICIA:\n",
+    "# CONTEXTO DE LA NOTICIA:\n",
     "Título: ", titulo, "\n",
-    "Fecha: ", fecha, "\n\n",
     "CONTENIDO:\n", contenido
   )
   
@@ -268,6 +273,7 @@ crear_prompt_completo <- function(fila_noticia) {
   return(prompt_final)
 }
 
+# Aquí ejecutamos
 prompt_example <- crear_prompt_completo(noticias_muestra[5,])
 example <- gemini(
   prompt_example,
@@ -275,11 +281,13 @@ example <- gemini(
   temperature = g_temperature,
   seed = g_seed
 )
+
+cat(example)
 ```
 
-## 10. Iteración guardando en una lista
+## Iteración guardando en una lista
 
-Nota: Agregar try_catch para capturar errores.
+Esta funcion es de pana
 
 ```{r}
 lista_respuestas <- list()
@@ -287,20 +295,30 @@ lista_respuestas <- list()
 for (i in 1:nrow(noticias_muestra)){
   noticia <- noticias_muestra[i,]
   prompt <- crear_prompt_completo(noticia)
-
-  analisis <- gemini(
-  prompt,
-  model = g_model,
-  temperature = g_temperature,
-  seed = g_seed
-)
-
-  lista_respuestas <- append(lista_respuestas, analisis)
+  
+  analisis <- NULL
+  
+  for(intento in 1:3){
+    analisis <- tryCatch(
+      gemini(prompt, model = g_model, temperature = g_temperature, seed = g_seed),
+      error = function(e) NULL
+    )
+    if(!is.null(analisis)) break
+    Sys.sleep(2)
+  }
+  
+  if(!is.null(analisis)) lista_respuestas <- append(lista_respuestas, analisis)
+  
   Sys.sleep(5)
 }
 ```
 
-## 11. Limpieza y aplanamiento
+```{r}
+# Revisamos
+cat(lista_respuestas[1]$text)
+```
+
+## Limpieza y aplanamiento
 
 ```{r}
 lista_proc <- lapply(lista_respuestas, function(elemento) {
