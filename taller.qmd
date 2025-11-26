@@ -28,7 +28,7 @@ editor_options:
 
 ### La revolución de la Inteligencia Artificial
 
--   Attention is all you need [@vaswani2017]: Artículo que crea la arquitectura transformer, que es la base de las IA actuales debido a su escalabilidad y eficiencia
+-   *Attention is all you need* [@vaswani2017]: Artículo que crea la arquitectura transformer, que es la base de las IA actuales debido a su escalabilidad y eficiencia
 
 -   Los grandes modelos de lenguaje (LLM por sus siglas en inglés) son modelos de Inteligencia Artificial entrenados en grandes volúmenes de datos, usualmente bajo la arquitectura de transformer, con la capacidad de comprender y generar texto para distintas tareas (traducción, programación, redacción, razonamiento, etc.)
 
@@ -100,7 +100,7 @@ editor_options:
 ## Configuración de la sesión
 
 ```{r}
-pacman::p_load(datamedios, gemini.R, dplyr, ggplot2, dotenv, purrr, jsonlite, flextable, GT) # Cargamos paquetes necesarios
+pacman::p_load(datamedios, gemini.R, dplyr, ggplot2, dotenv, purrr, jsonlite, flextable, DT) # Cargamos paquetes necesarios
 options(scipen = 999) # Desactivamos notación científica
 rm(list = ls()) # Limpiamos entorno de trabajo
 ```
@@ -143,34 +143,30 @@ noticias_muestra <- slice_sample(datos_filtrados, n=20)
 Exploramos el dataframe de noticias.
 
 ```{r}
-
-head(noticias_muestra)
+head(noticias_muestra, 5)
 ```
 
 ## Configuramos Gemini
 
-Nota: Manejar mejor la API key con .Renviron en vez de .env.
+Cargamos las variables de entorno, en particular la API key de Gemini. Además hacemos un test simple. Si recibimos la respuesta de Gemini entonces podemos pasar a lo siguiente.
 
 ```{r}
-
-google_api <- Sys.getenv("GEMINI_API_KEY")
-setAPI(google_api) # check https://makersuite.google.com/app/apikey
+readRenviron(".Renviron")
+setAPI(Sys.getenv("GEMINI_API_KEY")) # check https://makersuite.google.com/app/apikey
 gemini("¿Cuál es la diferencia entre la inteligencia artificial y la inteligencia artesanal? Responde en una línea")
-
 ```
 
+Configuramos los parámetros para el uso de la API.
+
+-   **g_model:** En model se pueden usar varios para respuesta de texto, como "gemini-2.5-pro", "gemini-2.5-flash", "gemini-2.5-flash-lite", etc. Pueden revisar el listado completo [aquí](https://ai.google.dev/gemini-api/docs/models).
+-   **g_temperature:** Podemos elegir también la temperatura para el modelo. Apunta a la objetividad-creatividad permitida en las respuestas. Números más cercanos a cero serían más "objetivos" y números más cercanos a dos serían más "creativos".
+-   **g_seed:** También pdoemos setear una semilla para hacer los resultados más reproducibles aunque no podemos asegurarlo completamente.
+-   Otros parámetros que para este caso recomendamos no cambiarlos, sin emabrgo, su información puede encontrarse en la documentación de la API de Gemini.
+
 ```{r}
-# Podemos hacer una configuración básica de gemini para el caso que queramos.
-
-# En model se pueden usar varios para respuesta de texto, como "gemini-2.5-pro", "gemini-2.5-flash", "gemini-2.5-flash-lite", etc.
-# Pueden revisar el listado completo en https://ai.google.dev/gemini-api/docs/models
+# Parámetros configurables
 g_model = "2.5-flash-lite"
-
-# Podemos elegir también la temperatura para el modelo. Apunta a la objetividad-creatividad permitida en las respuestas.
-# Números más cercanos a cero serían más "objetivos" y números más cercanos a dos serían más "creativos" (y propensos a alucinaciones).
 g_temperature = 0.7
-
-# También pdoemos setear una semilla para hacer los resultados más reproducibles aunque no podemos asegurarlo completamente
 g_seed = 42
 
 # Los siguientes recomendamos no cambiarlos para pruebas básicas
@@ -178,12 +174,17 @@ g_seed = 42
 # topK = 40
 # topP = 0.95
 # timeout = 60
-
 ```
 
 ## 7. Prompts
 
-En estricto rigor, gemini no permite que le pasemos instrucciones de sistema, petición de texto y estructuras de respuesta por separado. Nosotros en este caso los separamos en objetos distintos solo para hacerlo más modificable.
+Cuando diseñamos prompts buscamos, por lo general, la respuesta a cierta pregunta o la resolución de algún problema. Además, la forma en la que diseñamos un prompt influye estructuralmente en la respuesta que podamos recibir de un modelo de LLM. En el presente taller haremos el ejercicio interactivo de intentar responder a la siguiente pregunta de investigación: *¿Cómo se configura la construcción social y mediática de la Inteligencia Artificial en el discurso noticioso actual en medios de prensa escritos de alto impacto en Chile?*
+
+En estricto rigor, Gemini no permite que le pasemos instrucciones de sistema, petición de texto y estructuras de respuesta por separado. Nosotros en este caso los separamos en objetos distintos solo para hacerlo más modificable y separar bien las partes del prompt. Tenemos en este caso 3 partes, para comenzar a moldear las respuestas dependiendo de nuestro caso específico de estudio:
+
+1.  **system_prompt:** La idea es darle una idea específica de como "qué tipo de persona" tiene que comportarse y qué campos de conocimientos debe manejar para responder (es distinto preguntarle de inteligencia artifial a un experto en ciencias de la computación o a un periodista). Podemos utilizar este recurso para delimitar ciertos marcos teóricos y disciplinares al momento de esperar una respuesta.
+
+2.  **prompt_instruccion:** Como su nombre lo dice, las instrucciones específicas
 
 ```{r}
 system_prompt <- "Eres un científico social experto en análisis cualitativo con formación interdisciplinaria en sociología, antropología, ciencias políticas y ciencias de la comunicación. Tienes amplia experiencia en investigación de medios, análisis de discurso, estudios culturales y semiótica social. Posees la capacidad de examinar contenido mediático desde múltiples perspectivas teóricas, identificando marcos narrativos e interpretativos, agendas mediáticas, construcciones simbólicas y procesos de significación. Mantienes una perspectiva académica rigurosa y pensamiento crítico interdisciplinario."
