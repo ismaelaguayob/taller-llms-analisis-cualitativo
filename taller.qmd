@@ -100,7 +100,7 @@ editor_options:
 ## Configuración de la sesión
 
 ```{r}
-pacman::p_load(datamedios, gemini.R, dplyr, ggplot2, dotenv, purrr, jsonlite, flextable, DT) # Cargamos paquetes necesarios
+pacman::p_load(datamedios, dplyr, DT, flextable, gemini.R, ggplot2, jsonlite, purrr, stringr) # Cargamos paquetes necesarios
 options(scipen = 999) # Desactivamos notación científica
 rm(list = ls()) # Limpiamos entorno de trabajo
 ```
@@ -112,9 +112,10 @@ Nota: Por si acaso alguien tiene algún error inesperado para utilizar datamedio
 Cargamos los datos del paquete datamedios (<https://exetrujillo.github.io/datamedios/>).
 
 ```{r}
-
 datos <- datamedios::extraer_noticias_fecha("inteligencia artificial", "2025-11-1", "2025-11-25")
 
+# Si no te funciona datamedios puedes usar esto
+# noticias_muestra <- read.csv("noticias_muestra.csv")
 ```
 
 Limpiamos los datos y seleccionamos las columnas de interés.
@@ -140,10 +141,11 @@ set.seed(123)
 noticias_muestra <- slice_sample(datos_filtrados, n=20)
 ```
 
-Exploramos el dataframe de noticias.
+Exploramos el dataframe de noticias y guardamos los datos brutos de la muestra.
 
 ```{r}
 head(noticias_muestra, 5)
+write.csv(noticias_muestra, "noticias_muestra.csv")
 ```
 
 ## Configuramos Gemini
@@ -287,7 +289,7 @@ cat(example)
 
 ## Iteración guardando en una lista
 
-Esta funcion es de pana
+Iteramos por cada una de las filas del dataframe para obtener nuestra respuesta estructurada. Guardamos esto en una lista manejando los errores que puedan surgir. A veces, trabajando con API, una fila va a tener un error y nos puede detener el trabajo subsiguiente. Para ello implementamos una lógica de reintentos.
 
 ```{r}
 lista_respuestas <- list()
@@ -298,12 +300,12 @@ for (i in 1:nrow(noticias_muestra)){
   
   analisis <- NULL
   
-  for(intento in 1:3){
+  for(intento in 1:3){ # Aquí pueden poner más o menos si es necesario
     analisis <- tryCatch(
       gemini(prompt, model = g_model, temperature = g_temperature, seed = g_seed),
       error = function(e) NULL
     )
-    if(!is.null(analisis)) break
+    if(!is.null(analisis)) break # Si obtenemos el análisis se pasa directo a otra fila
     Sys.sleep(2)
   }
   
@@ -313,24 +315,27 @@ for (i in 1:nrow(noticias_muestra)){
 }
 ```
 
+Revisamos el caso de la quinta fila, que debiese ser muy parecido al del ejemplo inicial. Una posible vía de validación es que en diferentes llamadas un mismo caso va a dar resultados similares, aunque al tratarse de LLM es imposible asegurar una total repoducibilidad.
+
 ```{r}
-# Revisamos
-cat(lista_respuestas[1]$text)
+cat(lista_respuestas[5]$text)
 ```
 
 ## Limpieza y aplanamiento
 
-```{r}
-lista_proc <- lapply(lista_respuestas, function(elemento) {
-  texto_sucio <- elemento
-  texto_limpio <- str_trim(str_remove_all(texto_sucio, "^```json|```$"))
+Aplicamos una función de limpieza a la lista para eliminar los elementos *markdown* que nos entregó el LLM en la respuesta. Como *output* tendremos una lista concatenada con los distintos elementos que le solicitamos y lista para usar en R.
 
+```{r}
+lista_proc <- lapply(lista_respuestas, function(texto_sucio) {
+  texto_limpio <- str_trim(str_remove_all(texto_sucio, "^```json|```$"))
   objeto_r <- fromJSON(texto_limpio, flatten = TRUE)
-  
   return(objeto_r)
 })
 
+print(lista_proc[1]$text)
 ```
+
+Ya tenemos nuestro objeto de listas concatenadas, pero también podemos crear un dataframe para operarlo de mejor manera en R. En este caso tenemos una estructura algo compleja, ya que tenemos una lista que dentro también tiene un dataframe (con los actores y su rol). Entonces, creamos un dataframe aplanando nuestra lista.
 
 ```{r}
 aplanar_elemento <- function(elemento) {
@@ -351,35 +356,35 @@ aplanar_elemento <- function(elemento) {
 }
 
 # Aplicar a todos los elementos
-df_opcion1 <- purrr::map_dfr(lista_proc, aplanar_elemento)
+df_proc <- purrr::map_dfr(lista_proc, aplanar_elemento)
 ```
+
+Finalmente podemos unificar en un dataframe para tener la información original y la de análisis en un mismo lugar
 
 ```{r}
-datos_unificados <- bind_cols(noticias_muestra, df_opcion1)
+datos_unificados <- bind_cols(noticias_muestra, df_proc)
 ```
+
+Y podemos guardar los datos (●'◡'●)
 
 ```{r}
-library(DT)
-
-datatable(datos_unificados,
-  options = list(
-    columnDefs = list(
-      list(
-        # Aplicar a las columnas 3 y 5
-        targets = c(2, 4), 
-        render = JS(
-          "function(data, type, row, meta) {",
-          "  return type === 'display' && data.length > 50 ?",
-          "    '<span title=\"' + data + '\">' + data.substr(0, 50) + '...</span>' : data;",
-          "}")
-      )
-    )
-  )
-)
+write.csv(datos_unificados, "datos_analizados.csv")
+# Aquí también podemos importar el csv
+# datos_unificados <- read.csv("datos_analizados.csv")
 ```
+
+## Análisis descriptivos
 
 ```{r}
-write.csv(datos_unificados, "datos.csv")
-
-
+datos_descriptivos <- read.csv("datos_descriptivos.csv")
 ```
+
+Por motivos pedagógicos, vamos a cargar una base de datos más grande previamente analizada.
+
+-   Frecuencia de orientación tecnológica
+
+-   Frecuencia centralidad de la IA
+
+-   Cambio de esta en el tiempo
+
+-   Relación entre medio y orientación tecnológica
