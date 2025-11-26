@@ -14,33 +14,110 @@ format:
     toc-expand: 1
     toc-title: Contenidos
     number-sections: true
-    number-depth: 3
-    theme:
-      - united
+    theme: socialtec.scss
     code-link: true
     title-block-banner: true
-comments:
-  hypothesis: true
+bibliography: references.bib
+csl: apa.csl
+link-citations: true
 editor_options: 
   chunk_output_type: console
 ---
-## 1. Antecedentes
 
-## 2. Setup
+## Antecedentes
+
+### La revolución de la Inteligencia Artificial
+
+-   Attention is all you need [@vaswani2017]: Artículo que crea la arquitectura transformer, que es la base de las IA actuales debido a su escalabilidad y eficiencia
+
+-   Los grandes modelos de lenguaje (LLM por sus siglas en inglés) son modelos de Inteligencia Artificial entrenados en grandes volúmenes de datos, usualmente bajo la arquitectura de transformer, con la capacidad de comprender y generar texto para distintas tareas (traducción, programación, redacción, razonamiento, etc.)
+
+-   30 de noviembre 2022: lanzamiento de ChatGPT. 100 millones de usuarios en un año.
+
+-   Esto provocó un desarrollo acelerado de la IA en los últimos años:
+
+    -   Áuge en la competencia y modelos open source: Claude, Gemini, Grok, Kimi-k2, Gemma, Gpt-Oss
+    -   Múltiples aplicaciones: Vibe coding (Cursor, Windsurf), Ciencia (AlphaFold), Imágenes (MidJourney, NanoBanana), video (Veo3, Sora)
+    -   Desarrollo de infraestructura clave: construcción de centros de datos y supercomputadores
+    -   Avances en otras áreas como la robótica, la medicina, la neurociencia, etc.
+
+### Herramientas de consumidor vs. herramientas de desarrollador
+
+-   Dentro del mercado de la IA, existen distintos productos para distintas necesidades
+
+-   Los servicios para los consumidores son los que comúnmente uno utiliza, los chatbot accesibles a través de las páginas web o aplicaciones de celular de ChatGpt o Gemini. Usualmente, tienen planes gratuitos y de pago.
+
+![](images/chatgpt.jpg){fig-align="center"}
+
+-   Por otro lado, están las plataformas para desarrolladores, comúnmente ofrecidas por las empresas a través de una Interfaz de Programación de Aplicaciones (API por sus siglas en inglés). A diferencia de los chatbots, las APIs cobran por cada llamada o mensaje enviado, y están diseñadas para poder desarrollar usos específicos de los LLM.
+
+-   En este taller, utilizaremos este segundo enfoque, para aprovechar los beneficios que puede otorgar la Inteligencia Artificial, pero realizar los ajustes necesarios para mantener un flujo de investigación riguroso
+
+### LLMs para análisis cualitativo
+
+-   Anteriormente, la forma de utilizar *text-as-data* más común era a través de modelos más básicos, con una menor capacidad de comprender el contexto amplio. Por ejemplo, para identificar tipos de consumidores en un dataset de comentarios, se podía ejecutar un LDA o un STM para modelar los tópicos subyacentes.
+
+-   Desde la arquitectura transformers, la capacidad de comprensión del contexto se disparó, con algoritmos como BertTopic que aprovechan este avance para realizar tópicos que capturen una mayor complejidad.
+
+-   Sin embargo, los LLMs llevan esto a otro nivel, permitiendo realizar análisis profundo, cadenas de pensamiento, codificaciones y mapear redes entre actores. Softwares como Atlas.ti, ampliamente utilizado para el análisis cualitativo, ya integraron la codificación automática con GPT en sus útimas versiones.
+
+-   La literatura reciente ha demostrado formas innovadoras de utilizar estas herramientas para diferentes técnicas de análisis cualitativo:
+
+    -   Para realizar análisis de contenido [@bijker2024]
+
+    -   Para mapear redes entre actores [@bro2025]
+
+    -   Para realizar análisis de discurso [@zhang2025]
+
+    -   Para teoría fundamentada [@yue2025]
+
+-   La adaptación de los métodos y su validación es algo que está recién comenzando, y mientras que los estudios han destacado una buena correspondencia entre los códigos que realizan los LLM y los humanos, se han presentado grandes limitaciones y recomendaciones
+
+-   **Limitaciones**
+
+1.  Los códigos pueden ser más generales y omitir temas sensibles
+2.  Los LLMs tienen el riesgo de alucinar (aunque esto ha reducido considerablemente en el último tiempo)
+3.  Tienen una mayor dificultad de capturar tendencias generales
+
+-   **Recomendaciones**
+
+1.  Ingeniería de prompts precisa y bien pensada para el caso de uso específico
+2.  Parametrización y selección correcta de modelos
+3.  Colaboración y validación constante entre el investigador y el LLM, este es una herramienta útil, no reemplaza el trabajo.
+
+## Contenidos de la parte práctica
+
+-   Configuración de la sesión y preparaciones necesarias
+
+-   Diseño y optimización de prompts, creación de criterios para evaluar los resultados de los LLMs
+
+-   Comprensión básica de los principales parámetros de los modelos
+
+-   Creación de una función para aplicar el análisis cualitativo y automatización de esta a lo largo de un dataframe
+
+-   Análisis de la información obtenida
+
+## Configuración de la sesión
+
 ```{r}
-pacman::p_load(datamedios, gemini.R, dplyr, ggplot2, dotenv, purrr, jsonlite)
-options(scipen = 999)
-rm(list = ls())
+pacman::p_load(datamedios, gemini.R, dplyr, ggplot2, dotenv, purrr, jsonlite, flextable, GT) # Cargamos paquetes necesarios
+options(scipen = 999) # Desactivamos notación científica
+rm(list = ls()) # Limpiamos entorno de trabajo
 ```
 
-## 3. Cargar, limpiar y filtrar data
+## Procesamiento y carga de los datos
 
 Nota: Por si acaso alguien tiene algún error inesperado para utilizar datamedios, preparemos un csv con la data ya extraída para que lo utilicen.
+
+Cargamos los datos del paquete datamedios (<https://exetrujillo.github.io/datamedios/>).
+
 ```{r}
-datos <- datamedios::extraer_noticias_fecha("inteligencia artificial", "2022-11-1", "2025-09-01")
+
+datos <- datamedios::extraer_noticias_fecha("inteligencia artificial", "2025-11-1", "2025-11-25")
 
 ```
 
+Limpiamos los datos y seleccionamos las columnas de interés.
 
 ```{r}
 datos <- datamedios::limpieza_notas(datos, sinonimos= c("IA", "chat gpt", "openai", "chatbot", "chatgpt"))
@@ -49,28 +126,39 @@ datos_filtrados <- datos %>%
     select(titulo, contenido_limpio, fecha, medio, url)
 ```
 
-## 4. Explorar data
+## Explorar data
+
 ```{r}
 datamedios::grafico_notas_fecha(datos_filtrados, "Inteligencia artificial", tema = "dark")
 ```
+
+Seleccionamos una submuestra de 20 noticias para reducir el tiempo de procesamiento de los análisis.
+
 ```{r}
 set.seed(123)
 
 noticias_muestra <- slice_sample(datos_filtrados, n=20)
 ```
 
-## 5. Testear Gemini
+Exploramos el dataframe de noticias.
 
-Nota: Manejar mejor la API key con .Renviron en vez de .env. 
 ```{r}
-library(gemini.R)
+
+head(noticias_muestra)
+```
+
+## Configuramos Gemini
+
+Nota: Manejar mejor la API key con .Renviron en vez de .env.
+
+```{r}
+
 google_api <- Sys.getenv("GEMINI_API_KEY")
 setAPI(google_api) # check https://makersuite.google.com/app/apikey
 gemini("¿Cuál es la diferencia entre la inteligencia artificial y la inteligencia artesanal? Responde en una línea")
 
 ```
 
-## 6. Settear Gemini
 ```{r}
 # Podemos hacer una configuración básica de gemini para el caso que queramos.
 
@@ -90,9 +178,11 @@ g_seed = 42
 # topK = 40
 # topP = 0.95
 # timeout = 60
+
 ```
 
 ## 7. Prompts
+
 En estricto rigor, gemini no permite que le pasemos instrucciones de sistema, petición de texto y estructuras de respuesta por separado. Nosotros en este caso los separamos en objetos distintos solo para hacerlo más modificable.
 
 ```{r}
@@ -189,6 +279,7 @@ example <- gemini(
 ## 10. Iteración guardando en una lista
 
 Nota: Agregar try_catch para capturar errores.
+
 ```{r}
 lista_respuestas <- list()
 
@@ -222,7 +313,6 @@ lista_proc <- lapply(lista_respuestas, function(elemento) {
 
 ```
 
-
 ```{r}
 aplanar_elemento <- function(elemento) {
   data.frame(
@@ -251,7 +341,6 @@ datos_unificados <- bind_cols(noticias_muestra, df_opcion1)
 
 ```{r}
 library(DT)
-library(dplyr)
 
 datatable(datos_unificados,
   options = list(

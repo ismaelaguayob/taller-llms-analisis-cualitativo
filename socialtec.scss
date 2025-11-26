@@ -1,0 +1,102 @@
+/*-- scss:defaults --*/
+
+// -----------------------------------------------------
+// 0. IMPORTAR FUENTES (Request 2)
+// -----------------------------------------------------
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@600&family=Inter:wght@400&display=swap');
+
+// -----------------------------------------------------
+// 1. VARIABLES DE COLOR DE SOCIALTEC
+// -----------------------------------------------------
+$primary:   #02202d;    // Azul noche (navbar/footer)
+$secondary: #ff1a93;    // Rosa/Fucsia (acento principal)
+$body-color: #212529;   // Color de texto principal
+$body-bg:    #ffffff;   // Fondo blanco
+
+// -----------------------------------------------------
+// 2. VARIABLES DE BOOTSTRAP (QUARTO)
+// -----------------------------------------------------
+
+// -- General --
+$link-color: $secondary;
+$link-decoration: dashed;
+$link-hover-color: $secondary;
+
+// -- Tipografía (Request 2) --
+$font-family-sans-serif: 'Inter', system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", "Noto Sans", "Liberation Sans", Arial, sans-serif;
+$headings-font-family: 'Cairo', $font-family-sans-serif;
+$font-weight-base: 400; 
+$line-height-base: 1.8;
+$headings-font-weight: 600;
+$headings-color: $primary;
+
+// -- Navbar & Footer (Request 3) --
+$navbar-bg: $primary;    
+$navbar-dark-color: rgba(255, 255, 255, 0.7);
+$navbar-dark-hover-color: #ffffff;
+$navbar-dark-active-color: #ffffff;
+$navbar-dark-brand-color: #ffffff;
+$footer-bg: $primary;    
+$footer-color: rgba(255, 255, 255, 0.7);
+
+// -- Componentes --
+$blockquote-border-color: $secondary;
+$blockquote-border-width: 4px;
+$blockquote-font-style: italic;
+
+// -- Bloques de Código (Request 1) --
+// ¡ELIMINADOS! Se mueven a scss:rules para mayor especificidad.
+// $code-color: $secondary;          
+// $pre-bg: #2a2a2a;                 
+// $pre-color: #f1f1f1;               
+// $pre-border-color: #444;          
+
+
+/*-- scss:rules --*/
+
+// -----------------------------------------------------
+// 3. REGLAS CSS PERSONALIZADAS
+// -----------------------------------------------------
+
+// (Reglas de encabezados, párrafos, links, ToC... todo se mantiene igual)
+
+h1, h2, h3, h4 {
+  padding-bottom: 0.5rem;
+  position: relative;
+}
+h1::after, h2::after, h3::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 60px;
+  height: 3px;
+  background-color: $secondary;
+}
+p {
+  text-align: justify;
+}
+.quarto-body-content > p:first-of-type::first-letter {
+  font-size: 3.5em;
+  font-weight: 600;
+  float: left;
+  line-height: 0.8;
+  margin-right: 0.1em;
+  color: $secondary;
+}
+a:hover {
+  background-color: rgba($secondary, 0.1);
+  text-decoration: none;
+}
+#quarto-toc {
+  border-top: 3px solid $secondary;
+  border-radius: 8px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+  padding: 1rem;
+  background-color: #fff;
+}
+#quarto-toc .nav-link.active {
+  color: $secondary;
+  border-left: 2px solid $secondary;
+  font-weight: 600;
+}

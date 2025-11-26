@@ -36,23 +36,23 @@ A continuación, se presentan dos personas tipo ideales para este taller:
 
 Persona 1:
 
-- David es un sociólogo que investiga el discurso público en redes sociales. Actualmente, está analizando el debate en torno a una nueva política medioambiental.
+-   David es un sociólogo que investiga el discurso público en redes sociales. Actualmente, está analizando el debate en torno a una nueva política medioambiental.
 
-- Se siente cómodo usando R para análisis estadístico y `dplyr` para limpiar y transformar datos. Ha usado for loops, aunque a veces le cuestan un poco. No tiene ninguna experiencia con IA o APIs.
+-   Se siente cómodo usando R para análisis estadístico y `dplyr` para limpiar y transformar datos. Ha usado for loops, aunque a veces le cuestan un poco. No tiene ninguna experiencia con IA o APIs.
 
-- David ha recolectado miles de comentarios de una plataforma online y necesita clasificarlos. Quiere ir más allá de un simple análisis de sentimiento y extraer los argumentos principales que usan las personas (ej. "impacto económico", "justicia climática", "desconfianza en el gobierno"). Hacer esto a mano para todo el volumen de datos es inviable.
+-   David ha recolectado miles de comentarios de una plataforma online y necesita clasificarlos. Quiere ir más allá de un simple análisis de sentimiento y extraer los argumentos principales que usan las personas (ej. "impacto económico", "justicia climática", "desconfianza en el gobierno"). Hacer esto a mano para todo el volumen de datos es inviable.
 
-- Al no tener formación en programación, David necesita un flujo de trabajo muy claro y bien documentado que le permita aplicar los conceptos de análisis cualitativo que ya conoce, pero usando código de manera reproducible.
+-   Al no tener formación en programación, David necesita un flujo de trabajo muy claro y bien documentado que le permita aplicar los conceptos de análisis cualitativo que ya conoce, pero usando código de manera reproducible.
 
 Persona 2:
 
-- Sofía es una investigadora en salud pública que trabaja con transcripciones de entrevistas semi-estructuradas a pacientes con enfermedades crónicas.
+-   Sofía es una investigadora en salud pública que trabaja con transcripciones de entrevistas semi-estructuradas a pacientes con enfermedades crónicas.
 
-- Tiene un nivel intermedio de R y del tidyverse. Ha creado sus propias funciones para automatizar tareas repetitivas de limpieza y se siente segura con las iteraciones.
+-   Tiene un nivel intermedio de R y del tidyverse. Ha creado sus propias funciones para automatizar tareas repetitivas de limpieza y se siente segura con las iteraciones.
 
-- Su objetivo es identificar y sistematizar las barreras de acceso al sistema de salud mencionadas por los pacientes en las entrevistas. Busca un método que le permita extraer esta información de manera estructurada (por ejemplo, en un dataframe con columnas para "tipo de barrera", "contexto", "cita textual") para luego analizarla cuantitativamente.
+-   Su objetivo es identificar y sistematizar las barreras de acceso al sistema de salud mencionadas por los pacientes en las entrevistas. Busca un método que le permita extraer esta información de manera estructurada (por ejemplo, en un dataframe con columnas para "tipo de barrera", "contexto", "cita textual") para luego analizarla cuantitativamente.
 
-- A Sofía le preocupa mucho la rigurosidad y la transparencia metodológica. Le interesa especialmente aprender a diseñar y optimizar "prompts" para asegurar que los resultados del modelo de IA sean consistentes, fiables y poder justificar su método en una publicación científica.
+-   A Sofía le preocupa mucho la rigurosidad y la transparencia metodológica. Le interesa especialmente aprender a diseñar y optimizar "prompts" para asegurar que los resultados del modelo de IA sean consistentes, fiables y poder justificar su método en una publicación científica.
 
 ## Máximo de integrantes: 30
 
