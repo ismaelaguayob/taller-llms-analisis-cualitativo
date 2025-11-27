@@ -100,7 +100,7 @@ editor_options:
 ## Configuración de la sesión
 
 ```{r}
-pacman::p_load(datamedios, dplyr, DT, flextable, gemini.R, ggplot2, jsonlite, purrr, stringr) # Cargamos paquetes necesarios
+pacman::p_load(datamedios, dplyr, gemini.R, ggplot2, jsonlite, purrr, stringr) # Cargamos paquetes necesarios
 options(scipen = 999) # Desactivamos notación científica
 rm(list = ls()) # Limpiamos entorno de trabajo
 ```
@@ -311,7 +311,7 @@ for (i in 1:nrow(noticias_muestra)){
   
   if(!is.null(analisis)) lista_respuestas <- append(lista_respuestas, analisis)
   
-  Sys.sleep(5)
+  Sys.sleep(2)
 }
 ```
 
