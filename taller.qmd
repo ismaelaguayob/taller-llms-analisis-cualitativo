@@ -85,7 +85,7 @@ editor_options:
 2.  Parametrización y selección correcta de modelos
 3.  Colaboración y validación constante entre el investigador y el LLM, este es una herramienta útil, no reemplaza el trabajo.
 
-## Contenidos de la parte práctica
+## Contenidos del taller
 
 -   Configuración de la sesión y preparaciones necesarias
 
@@ -93,14 +93,16 @@ editor_options:
 
 -   Comprensión básica de los principales parámetros de los modelos
 
--   Creación de una función para aplicar el análisis cualitativo y automatización de esta a lo largo de un dataframe
+-   Creación de una función para aplicar el análisis cualitativo y automatización de esta a lo largo de un dataframe. Utilizaremos Gemini ya que otorga créditos gratis de la API.
 
 -   Análisis de la información obtenida
+
+Todo el contenido del taller quedará a disposición posteriormente. El taller asume que tienen algunos conocimientos de R básicos-intermedios, cómo manejo de dataframes, funciones, iteraciones y el ecosistema tidyverse, por lo que no entraremos en mayores detalles sobre todos estos contenidos. El principal objetivo es que puedan realizar análisis cualitativo de forma automatizada utilizando LLMs a través de R, independientemente del área de estudios o el caso de uso que tengan, y logren adaptar las herramientas técnicas que les enseñaremos de forma sencilla.
 
 ## Configuración de la sesión
 
 ```{r}
-pacman::p_load(datamedios, dplyr, gemini.R, ggplot2, jsonlite, purrr, stringr) # Cargamos paquetes necesarios
+pacman::p_load(datamedios, dplyr, gemini.R, ggplot2, jsonlite, lubridate, purrr, stringr, tidyverse, tidytext, tm, wordcloud2) # Cargamos paquetes necesarios
 options(scipen = 999) # Desactivamos notación científica
 rm(list = ls()) # Limpiamos entorno de trabajo
 ```
@@ -145,6 +147,9 @@ Exploramos el dataframe de noticias y guardamos los datos brutos de la muestra.
 
 ```{r}
 head(noticias_muestra, 5)
+```
+```{r}
+#| eval: false
 write.csv(noticias_muestra, "noticias_muestra.csv")
 ```
 
@@ -153,16 +158,19 @@ write.csv(noticias_muestra, "noticias_muestra.csv")
 Cargamos las variables de entorno, en particular la API key de Gemini. Además hacemos un test simple. Si recibimos la respuesta de Gemini entonces podemos pasar a lo siguiente.
 
 ```{r}
+
 readRenviron(".Renviron")
 setAPI(Sys.getenv("GEMINI_API_KEY")) # check https://makersuite.google.com/app/apikey
 gemini("¿Cuál es la diferencia entre la inteligencia artificial y la inteligencia artesanal? Responde en una línea")
 ```
 
+## Parámetros de gemini (y casi todos los LLM)
+
 Configuramos los parámetros para el uso de la API.
 
 -   **g_model:** En model se pueden usar varios para respuesta de texto, como "gemini-2.5-pro", "gemini-2.5-flash", "gemini-2.5-flash-lite", etc. Pueden revisar el listado completo [aquí](https://ai.google.dev/gemini-api/docs/models).
 -   **g_temperature:** Podemos elegir también la temperatura para el modelo. Apunta a la objetividad-creatividad permitida en las respuestas. Números más cercanos a cero serían más "objetivos" y números más cercanos a dos serían más "creativos".
--   **g_seed:** También pdoemos setear una semilla para hacer los resultados más reproducibles aunque no podemos asegurarlo completamente.
+-   **g_seed:** También podemos setear una semilla para hacer los resultados más reproducibles aunque no podemos asegurarlo completamente.
 -   Otros parámetros que para este caso recomendamos no cambiarlos, sin emabrgo, su información puede encontrarse en la documentación de la API de Gemini.
 
 ```{r}
@@ -294,22 +302,29 @@ Iteramos por cada una de las filas del dataframe para obtener nuestra respuesta 
 ```{r}
 lista_respuestas <- list()
 
+lista_respuestas <- vector("list", nrow(noticias_muestra)) # Creamos posiciones vacías en la lista para cada fila de nuestro dataframe
+
 for (i in 1:nrow(noticias_muestra)){
   noticia <- noticias_muestra[i,]
   prompt <- crear_prompt_completo(noticia)
   
   analisis <- NULL
-  
-  for(intento in 1:3){ # Aquí pueden poner más o menos si es necesario
+
+  # Lógica de reintentos
+  for(intento in 1:3){ 
     analisis <- tryCatch(
       gemini(prompt, model = g_model, temperature = g_temperature, seed = g_seed),
-      error = function(e) NULL
+      error = function(e) { message(paste("Error en fila", i, "intento", intento)); return(NULL) }
     )
-    if(!is.null(analisis)) break # Si obtenemos el análisis se pasa directo a otra fila
+    if(!is.null(analisis)) break 
     Sys.sleep(2)
+  }  
+  if(!is.null(analisis)) {
+    lista_respuestas[[i]] <- analisis
+  } else {
+    lista_respuestas[[i]] <- NA 
+    message(paste("Fila", i, "quedó vacía por error en API."))
   }
-  
-  if(!is.null(analisis)) lista_respuestas <- append(lista_respuestas, analisis)
   
   Sys.sleep(2)
 }
@@ -318,7 +333,7 @@ for (i in 1:nrow(noticias_muestra)){
 Revisamos el caso de la quinta fila, que debiese ser muy parecido al del ejemplo inicial. Una posible vía de validación es que en diferentes llamadas un mismo caso va a dar resultados similares, aunque al tratarse de LLM es imposible asegurar una total repoducibilidad.
 
 ```{r}
-cat(lista_respuestas[5]$text)
+cat(lista_respuestas[[5]])
 ```
 
 ## Limpieza y aplanamiento
@@ -332,7 +347,7 @@ lista_proc <- lapply(lista_respuestas, function(texto_sucio) {
   return(objeto_r)
 })
 
-print(lista_proc[1]$text)
+print(lista_proc[[1]])
 ```
 
 Ya tenemos nuestro objeto de listas concatenadas, pero también podemos crear un dataframe para operarlo de mejor manera en R. En este caso tenemos una estructura algo compleja, ya que tenemos una lista que dentro también tiene un dataframe (con los actores y su rol). Entonces, creamos un dataframe aplanando nuestra lista.
@@ -368,6 +383,8 @@ datos_unificados <- bind_cols(noticias_muestra, df_proc)
 Y podemos guardar los datos (●'◡'●)
 
 ```{r}
+#| eval: false
+
 write.csv(datos_unificados, "datos_analizados.csv")
 # Aquí también podemos importar el csv
 # datos_unificados <- read.csv("datos_analizados.csv")
@@ -375,16 +392,265 @@ write.csv(datos_unificados, "datos_analizados.csv")
 
 ## Análisis descriptivos
 
+Por motivos pedagógicos, vamos a cargar una base de datos más grande preprocesada por gemini (n=249), entre 2023 y 2025.
+
 ```{r}
 datos_descriptivos <- read.csv("datos_descriptivos.csv")
 ```
 
-Por motivos pedagógicos, vamos a cargar una base de datos más grande previamente analizada.
+Observamos la frecuencia de los datos a lo largo del tiempo. 
+```{r}
+datamedios::grafico_notas_fecha(datos_descriptivos, titulo="Noticias a lo largo del tiempo en los datos", agrupar_por = "month", tema = "dark")
 
--   Frecuencia de orientación tecnológica
+datamedios::grafico_comparacion_medios(datos_descriptivos, titulo = "Comparación medios a lo largo del tiempo", agrupar_por = "month", tema = "dark")
+```
 
--   Frecuencia centralidad de la IA
+Tenemos más datos de bíobío que de otros medios debido a su frecuencia de publicación. El medio guioteca tiene muy pocas noticias, por lo que no se puede interpretar mucho
 
--   Cambio de esta en el tiempo
+### Preprocesamiento
+```{r}
 
--   Relación entre medio y orientación tecnológica
+df <- datos_descriptivos %>%
+  mutate(
+    fecha = as.Date(fecha), # Convertimos a fecha
+    centralidad_ia = factor(centralidad_ia, levels = c("baja", "media", "alta")),
+    orientacion_tecnologica = factor(orientacion_tecnologica, 
+                                     levels = c("tecnofobia", "neutralidad", "tecnofilia"))
+  )
+colores_orientacion <- c("tecnofobia" = "#D73027",
+                         "neutralidad" = "#E0E0E0",
+                         "tecnofilia" = "#4575B4")
+                      
+colores_centralidad <- c("baja" = "#7008E7", 
+                         "media" = "#2AA63E", 
+                         "alta" = "#FE9A37")
+```
+
+### Frecuencia de orientación tecnológica
+```{r}
+
+grafico_1 <- df %>%
+  count(orientacion_tecnologica) %>%
+  mutate(prop = n / sum(n)) %>%
+  ggplot(aes(x = orientacion_tecnologica, y = n, fill = orientacion_tecnologica)) +
+  geom_col(show.legend = FALSE) +
+  geom_text(aes(label = scales::percent(prop, accuracy = 1)), vjust = -0.5) +
+  scale_fill_manual(values = colores_orientacion) +
+  labs(title = "Distribución de la Orientación Tecnológica",
+       subtitle = "¿Cómo se evalúa la IA en las noticias?",
+       x = NULL, y = "Cantidad de noticias") +
+  theme_minimal()
+
+grafico_1
+
+```
+
+La orientación más presente en los medios es *neutralidad*, seguida de tecnofilia. Existe una baja proporción de noticias con una concepción negativa de la IA, de solo 10%.
+
+### Frecuencia de centralidad de la IA
+
+```{r}
+grafico_2 <- df %>%
+  count(centralidad_ia) %>%
+  mutate(prop = n / sum(n)) %>%
+  ggplot(aes(x = centralidad_ia, y = n, fill= centralidad_ia)) +
+  geom_col() + 
+  scale_fill_manual(values = colores_centralidad) +
+  geom_text(aes(label = scales::percent(prop, accuracy = 1)), vjust = -0.5) +
+  labs(title = "Centralidad de la IA en el discurso",
+       subtitle = "Nivel de protagonismo de la tecnología en la noticia",
+       x = "Nivel de Centralidad", y = "Cantidad de noticias") +
+  theme_minimal()
+
+grafico_2
+```
+
+La centralidad de la IA se reparte equitativamente entre baja, media y alta, con una proporción algo mayor de una gran importancia de la IA en las noticias (40%).
+
+### Orientación tecnológica a través del tiempo
+
+```{r}
+df_tiempo <- df %>%
+  mutate(mes = floor_date(fecha, "month")) %>%
+  count(mes, orientacion_tecnologica)
+
+grafico_3 <- df_tiempo %>%
+  ggplot(aes(x = mes, y = n, color = orientacion_tecnologica)) +
+  geom_line(size = 1) +
+  geom_point() +
+  scale_color_manual(values = colores_orientacion) +
+  labs(title = "Evolución de la Orientación Tecnológica",
+       subtitle = "Frecuencia mensual de noticias",
+       x = "Fecha", y = "Número de artículos", color = "Orientación") +
+  theme_minimal()
+
+grafico_3
+```
+
+Las tendencias se mantienen en el tiempo, con la neutralidad consistentemente siendo la categoía más alta, y la tecnofilia y la tecnofobia presentando picos en ciertos momentos. 
+
+### Centralidad IA a través del tiempo
+
+```{r}
+
+df_tiempo_centralidad <- df %>%
+  mutate(anio = as.factor(year(as.Date(fecha)))) %>%
+  count(anio, centralidad_ia) %>%
+  group_by(anio) %>%
+  mutate(prop = n / sum(n)) %>%
+  ungroup()
+
+grafico_4 <- df_tiempo_centralidad %>%
+  ggplot(aes(x = anio, y = prop, fill = centralidad_ia)) +
+  geom_col(position = "stack", width = 0.7) +
+  geom_text(aes(label = scales::percent(prop, accuracy = 1)), 
+            position = position_stack(vjust = 0.5), # Centrado en la barra
+            color = "white", 
+            fontface = "bold",
+            size = 4) +
+  scale_y_continuous(labels = scales::percent) +
+  scale_fill_manual(values = colores_centralidad) +
+  labs(title = "Evolución de la Centralidad de la IA por Año",
+       subtitle = "Proporción de noticias según nivel de protagonismo",
+       x = "Año",
+       y = "Porcentaje",
+       fill = "Centralidad") +
+  theme_minimal() +
+  theme(
+    legend.position = "top",
+    panel.grid.major.x = element_blank()
+  )
+
+grafico_4
+
+
+```
+
+De la misma forma, la centralidad de la IA se mantiene relativamente constante a lo largo del tiempo, aunque en 2023 hubo una mayor cantidad de noticias con un protagonismo alto de esta.
+
+### Orientación tecnológica por medio
+```{r}
+grafico_5 <- df %>%
+  count(medio, orientacion_tecnologica) %>%
+  group_by(medio) %>%
+  mutate(pct = n / sum(n)) %>%
+  ggplot(aes(x = medio, y = pct, fill = orientacion_tecnologica)) +
+  geom_col(position = "fill") +
+  scale_y_continuous(labels = scales::percent) +
+  scale_fill_manual(values = colores_orientacion) +
+  coord_flip() +
+  labs(title = "Orientación Tecnológica por Medio",
+       subtitle = "Proporción de noticias positivas, neutras y negativas",
+       x = NULL, y = "Porcentaje", fill = "Orientación") +
+  theme_minimal()
+
+grafico_5
+```
+
+Se aprecian diferencias en la narrativa en torno a la IA presente en los medios: emol y medios regionales presentan un discurso tecnofílico más marcado, mientras que en bíobío predomina de forma más evidente la neutralidad. 
+
+### Centralidad IA por medio
+
+```{r}
+grafico_6 <- df %>%
+  count(medio, centralidad_ia) %>%
+  group_by(medio) %>%
+  mutate(pct = n / sum(n)) %>%
+  ggplot(aes(x = medio, y = pct, fill = centralidad_ia)) +
+  geom_col(position = "fill") +
+  scale_y_continuous(labels = scales::percent) +
+  scale_fill_manual(values = colores_centralidad) +
+  coord_flip() +
+  labs(title = "Centralidad IA por Medio",
+       subtitle = "Proporción de noticias positivas, neutras y negativas",
+       x = NULL, y = "Porcentaje", fill = "Orientación") +
+  theme_minimal()
+
+grafico_6
+```
+
+Con respecto a la centralidad de la IA, también se aprecian diferencias entre los medios. El diario Emol, consistentemente con el análisis previo, tiende a resaltar la relevancia de la IA en sus noticias, mientras que en BioBio la centralidad baja es más predominante. 
+
+### Nube de palabras columna análisis
+
+```{r}
+# Stop words
+
+lista_base <- tibble(word = tm::stopwords("es"))
+
+mas_stop_words <- tibble(word = c(
+  "inteligencia", "artificial", "noticia", "noticias",
+  "orientación", "tecnológica", "ia", "dentro", "destacando",
+  "enmarca", "centra", "clara", "discurso", "si", "énfasis",
+  "forma", "presenta", "narrativa", "través", "figura", "factor",
+  "sino", "busca", "chile", "abordar", "chileno", "sector",
+  "actores", "apoyo", "oscila", "enfatizan", "generar",
+  "ser", "allá", "análisis", "actúa", "hacia", "tecnología",
+  "observa", "elemento", "foco", "cómo", "marco", "aborda", "utiliza", "posibles", "enmarcando", "utilizando", "construcción", "discursiva", "marcos", "narrativos",
+  "principal", "recae", "presentando", "informativo", "tratamiento", "agenda", "mediática",
+  "eje", "central", "tema", "predominantemente", "asociados", "omitiendo", "manera", "mencionada"
+))
+
+stop_words_final <- bind_rows(lista_base, mas_stop_words)
+
+palabras_para_nube <- df %>%
+  # Separar en palabras individuales
+  unnest_tokens(word, analisis) %>%
+  # Quitar espacios en blanco extra
+  mutate(word = str_trim(word)) %>%
+  # Eliminar palabras que estén en nuestra lista de stop words
+  anti_join(stop_words_final, by = "word") %>%
+  # Contar frecuencia
+  count(word, sort = TRUE)
+
+wordcloud2(palabras_para_nube, size = 0.7, color = "random-dark")
+
+```
+
+En el análisis realizado por Gemini, existe una prevalencia de ciertas palabras por sobre otras. La palabra tecnofílica es la más mencionada, sustentada en discursos relacionados con la "eficciencia", el "avance", los "beneficios" y el "desarrollo". Por otra parte, se destacan narrativas con un tono más crítico, con una alta frecuencia de palabras como "riesgos", "implicaciones" y "éticas".
+
+### Bigramas análisis
+
+```{r}
+# Tokenizar en pares de palabras (bigramas)
+bigramas_analisis <- df %>%
+  unnest_tokens(bigram, analisis, token = "ngrams", n = 2) %>%
+  # Separar para filtrar stopwords
+  separate(bigram, c("word1", "word2"), sep = " ") %>%
+  filter(!word1 %in% stop_words_final$word,
+         !word2 %in% stop_words_final$word) %>% 
+  # Unir de nuevo
+  unite(bigram, word1, word2, sep = " ") %>%
+  count(bigram, sort = TRUE)
+
+# Graficar los Top 15 bigramas
+grafico_6 <- bigramas_analisis %>%
+  head(20) %>%
+  mutate(bigram = reorder(bigram, n)) %>%
+  ggplot(aes(x = bigram, y = n)) +
+  geom_col(fill = "darkred") +
+  coord_flip() +
+  labs(title = "Frases más comunes en el análisis cualitativo",
+       subtitle = "Bigramas más frecuentes",
+       x = NULL, y = "Frecuencia") +
+  theme_minimal()
+
+print(grafico_6)
+```
+
+Observando el análisis de los bigramas, se obtiene una mirada más profunda del análisis realizado por el LLM. "Debates éticos", "implicaciones sociales" y "riesgos inherentes" son de los conceptos más frecuentemente utilizados en conjunto, conectados con la narrativa más alarmista en torno a los avances de la IA. Por otro lado, se encuentran conceptos como "avance tecnológico", "herramienta innovadora" "herramienta democratizadora" y "desarrollo económico", asociados al discurso tecnofílico. Encontrando otros marcos interpretativos que presentan las noticias, se observan conceptos como "competencia geopolítica", "propiedad intelectual", "mercado laboral" e incluso "ciencia ficción", siendo estos temas centrales en la discusión contemporánea sobre la IA.
+
+## Conclusión
+
+- Revisamos los avances recientes de la IA y sus aplicaciones al análisis de texto
+- Aprendimos un flujo de trabajo automatizado para realizar análisis cualitativo en grandes volúmenes de texto, aplicable para múltiples disciplinas y a través de diferentes modelos
+- Profundizamos en distintas prácticas para el correcto funcionamiento de estas tecnologías, como el uso de prompts precisos y estructurados
+- Procesamos estos datos para poder analizarlos en R, y observamos diferentes alternativas básicas para visualizarlos e interpretarlos
+
+## Discusión 
+
+- Si bien aún queda mucho camino por recorrer, aprender a utilizar este tipo de herramientas presenta grandes ventajas para la investigación cualitativa
+- En la discusión reciente, se han destacado desafíos para implementar estas herramientas. 
+- Entre los más relevantes, se encuentra el problema de la validación de los códigos generados, los posibles sesgos algorítmicos y de entrenamiento y la utilización de datos para entrenamiento.
+- Para enfrentar estos problemas, es necesario estar informado, experimentar y continuar indagando sobre las potencialidades de estas herramientas. Sin duda alguna, el futuro del análisis cualitativo tendrá una mucho mayor presencia de LLMs, ya que reducen considerablemente la carga de trabajo y abren posibilidades de análisis antes inimaginables, y se encuentran en un acelerado desarrollo.
+- El uso correcto de estas tecnologías debe ser con una colaboración fuerte entre humano y máquina, y no algo meramente automático. Es crucial que aprendamos a utilizarlas en entornos que nos permitan tomar las decisiones importantes, y no desde las plataformas de consumo, en donde estas opciones vendrán por defecto.
