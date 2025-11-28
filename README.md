@@ -1,4 +1,4 @@
 > [!NOTE]  
-> [LINK DEL TALLER](https://ismaelaguayob.github.io/taller-gemini-datamedios/taller)
+> [LINK DEL TALLER](https://ismaelaguayob.github.io/taller-llms-analisis-cualitativo/taller)
 
 Taller de Análisis Cualitativo con LLMs desarrollado junto a Exequiel Trujillo para LatinR 2025. Se utiliza la API de gemini para analizar el discurso en noticias, con el objetivo de demostrar un flujo de investigación innovador con Inteligencia Artificial. Se revisan los últimos avances metodológicos al respecto, para abordar la temática desde una perspectiva situada, y se discuten preocupaciones sobre la validez y los posibles sesgos. Se entiende que para poder comprender estas nuevas técnicas, que seguramente cada vez van a ser más importantes, se debe aprender a utilizarlas de forma informada y con una colaboración fuerte entre humano y máquina.
