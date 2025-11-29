@@ -122,7 +122,7 @@ Nota: Por si acaso alguien tiene algún error inesperado para utilizar datamedio
 Cargamos los datos del paquete datamedios (<https://exetrujillo.github.io/datamedios/>).
 
 ```{r}
-datos <- datamedios::extraer_noticias_fecha("inteligencia artificial", "2025-11-1", "2025-11-25")
+datos <- datamedios::extraer_noticias_fecha("inteligencia artificial", "2025-11-1", "2025-11-25", subir_a_bd = FALSE)
 
 # Si no te funciona datamedios puedes usar esto. Debes saltarte los siguientes pasos hasta el muestreo.
 # noticias_muestra <- read.csv("noticias_muestra.csv")
@@ -166,12 +166,18 @@ write.csv(noticias_muestra, "noticias_muestra.csv")
 
 Vamos a utilizar \`gemini.R\` [@kim2025], un paquete que nos abstrae de utilizar la API directamente, con funciones construidas útiles para hacer el análisis.
 
-Cargamos las variables de entorno, en particular la API key de Gemini. Además hacemos un test simple. Si recibimos la respuesta de Gemini entonces podemos pasar a lo siguiente.
+Cargamos las variables de entorno, en particular la API key de Gemini. Deben crear un archivo `.Renviron` y pegar lo siguiente:
+```
+GEMINI_API_KEY =tuapikeyaqui
+(espacio en blanco)
+```
+
+Además hacemos un test simple. Si recibimos la respuesta de Gemini entonces podemos pasar a lo siguiente.
 
 ```{r}
 
 readRenviron(".Renviron")
-setAPI(Sys.getenv("GEMINI_API_KEY")) # check https://makersuite.google.com/app/apikey
+setAPI(Sys.getenv("GEMINI_API_KEY")) # check https://aistudio.google.com/api-keys
 gemini("¿Cuál es la diferencia entre la inteligencia artificial y la inteligencia artesanal? Responde en una línea")
 ```
 
@@ -180,7 +186,7 @@ gemini("¿Cuál es la diferencia entre la inteligencia artificial y la inteligen
 Configuramos los parámetros para el uso de la API.
 
 -   **g_model:** En model se pueden usar varios para respuesta de texto, como "gemini-2.5-pro", "gemini-2.5-flash", "gemini-2.5-flash-lite", etc. Ahora está disponible la familia gemini 3. Pueden revisar el listado completo [aquí](https://ai.google.dev/gemini-api/docs/models).
--   **g_temperature:** Podemos elegir también la temperatura para el modelo. Apunta a la objetividad-creatividad permitida en las respuestas. Números más cercanos a cero serían más "objetivos" y números más cercanos a dos serían más "creativos".
+-   **g_temperature:** Podemos elegir también la temperatura para el modelo. Apunta a la objetividad-creatividad permitida en las respuestas. Números más cercanos a cero serían más "objetivos" y más conservadores (lo que a veces es menos útil), números más cercanos a dos serían más "creativos".
 -   **g_seed:** También podemos setear una semilla para hacer los resultados más reproducibles aunque no podemos asegurarlo completamente.
 -   Existen otros parámetros que para este caso no recomendamos cambiarlos, sin embargo, su información puede encontrarse en la documentación de la API de Gemini.
 
@@ -344,7 +350,7 @@ for (i in 1:nrow(noticias_muestra)){
 }
 ```
 
-Revisamos el caso de la sexta fila, que debiese ser muy parecido al del ejemplo inicial. Un tip: para ahorrar recursos, podemos realizar un análisis a una menor escala, ver si funciona correctamente, y luego ejecutarlo en todos los datos. Para la versión final, también podríamos utilizar un modelo de razonamiento, para asegurarnos que los resultados definitivos sean los más correctos.
+Revisamos el caso de la sexta fila, que debiese ser muy parecido al del ejemplo inicial. Un tip: para ahorrar recursos, podemos realizar un análisis a una menor escala, ver si funciona correctamente, y luego ejecutarlo en todos los datos. Para la versión final, también podríamos utilizar un modelo de razonamiento más caro (`gemini 3 pro`), para asegurarnos que los resultados definitivos sean los mejores.
 
 ```{r}
 cat(lista_respuestas[[6]])
@@ -441,24 +447,19 @@ write.csv(df_actores_unificados, "datos_actores.csv")
 
 ## Análisis y estrategias de reporte
 
-Por motivos pedagógicos, vamos a cargar una base de datos más grande preprocesada por gemini (n=250), entre fines del 2022 y 2025.
+Por motivos pedagógicos, vamos a cargar una base de datos más grande preprocesada por gemini (n=252), seleccionando la misma cantidad de noticias de tres medios distintos entre fines del 2022 y 2025.
 
-Uno de los principales desafíos al utilizar estas herramientas es poder entender el análisis realizado. Para esto, podemos utilizar diversas herramientas de análisis descriptivo y Procesamiento de Lenguaje Natural para identificar conceptos clave, y posteriormente profundizar en los puntos más relevantes para nuestros objetivos.
+Uno de los principales desafíos al utilizar estas herramientas es poder entender el análisis realizado. Para esto, podemos utilizar diversas visualizaciones y Procesamiento de Lenguaje Natural para identificar conceptos clave, y posteriormente profundizar o "hacer zoom" en los puntos más relevantes para nuestros objetivos.
 
 ```{r}
 datos_descriptivos <- read.csv("datos_analisis.csv")
 datos_actores <- read.csv("datos_actores_analisis.csv")
 ```
 
-Observamos la frecuencia de los datos a lo largo del tiempo.
-
+Observamos la frecuencia de los datos a lo largo del tiempo. Van aumentando desde la salida de ChatGPT.
 ```{r}
 datamedios::grafico_notas_fecha(datos_descriptivos, titulo="Noticias a lo largo del tiempo en los datos", agrupar_por = "month", tema = "dark")
-
-datamedios::grafico_comparacion_medios(datos_descriptivos, titulo = "Comparación medios a lo largo del tiempo", agrupar_por = "month", tema = "dark")
 ```
-
-Tenemos más datos de bíobío que de otros medios debido a su frecuencia de publicación. El medio guioteca tiene muy pocas noticias, por lo que no se puede interpretar mucho.
 
 ### Preprocesamiento
 
@@ -500,7 +501,7 @@ grafico_1
 
 ```
 
-La orientación más presente en los medios es *neutralidad*, seguida de tecnofilia. Existe una baja proporción de noticias con una concepción negativa de la IA, de solo 10%.
+La orientación más presente en los medios es *neutralidad*, seguida de *tecnofilia*. Existe una baja proporción de noticias con una concepción negativa de la IA, de solo 12%.
 
 ### Frecuencia de centralidad de la IA
 
@@ -520,29 +521,43 @@ grafico_2 <- df %>%
 grafico_2
 ```
 
-La centralidad de la IA se reparte equitativamente entre baja, media y alta, con una proporción algo mayor de una gran importancia de la IA en las noticias (40%).
+La centralidad de la IA es comúnmente alta, con una baja proporción de noticias en donde es una temática pasajera.
 
 ### Orientación tecnológica a través del tiempo
 
 ```{r}
-df_tiempo <- df %>%
-  mutate(mes = floor_date(fecha, "month")) %>%
-  count(mes, orientacion_tecnologica)
+df_tiempo_orientacion <- df %>%
+  mutate(anio = as.factor(year(as.Date(fecha)))) %>%
+  count(anio, orientacion_tecnologica) %>%
+  group_by(anio) %>%
+  mutate(prop = n / sum(n)) %>%
+  ungroup()
 
-grafico_3 <- df_tiempo %>%
-  ggplot(aes(x = mes, y = n, color = orientacion_tecnologica)) +
-  geom_line(size = 1) +
-  geom_point() +
-  scale_color_manual(values = colores_orientacion) +
-  labs(title = "Evolución de la Orientación Tecnológica",
-       subtitle = "Frecuencia mensual de noticias",
-       x = "Fecha", y = "Número de artículos", color = "Orientación") +
-  theme_minimal()
+grafico_4 <- df_tiempo_orientacion %>%
+  ggplot(aes(x = anio, y = prop, fill = orientacion_tecnologica)) +
+  geom_col(position = "stack", width = 0.7) +
+  geom_text(aes(label = scales::percent(prop, accuracy = 1)), 
+            position = position_stack(vjust = 0.5), # Centrado en la barra
+            color = "white", 
+            fontface = "bold",
+            size = 4) +
+  scale_y_continuous(labels = scales::percent) +
+  scale_fill_manual(values = colores_orientacion) +
+  labs(title = "Evolución de la Orientación Tecnológica de los medios por Año",
+       subtitle = "Proporción de noticias según Tecnofobia, Neutralidad o Tecnofilia",
+       x = "Año",
+       y = "Porcentaje",
+       fill = "Orientación") +
+  theme_minimal() +
+  theme(
+    legend.position = "top",
+    panel.grid.major.x = element_blank()
+  )
 
-grafico_3
+grafico_4
 ```
 
-Las tendencias se mantienen en el tiempo, con la neutralidad consistentemente siendo la categoía más alta, y la tecnofilia y la tecnofobia presentando picos en ciertos momentos.
+En 2022 tenemos muy pocas noticias. El 2024 fue el año con una narrativa más positiva de la IA, mientras que en 2025 se presenta menor tecnofilia y mayor tecnofobia. Podríamos explorar si esto se debe a las noticias recientes sobre la burbuja financiera.
 
 ### Centralidad IA a través del tiempo
 
@@ -581,7 +596,7 @@ grafico_4
 
 ```
 
-De la misma forma, la centralidad de la IA se mantiene relativamente constante a lo largo del tiempo, aunque en 2023 hubo una mayor cantidad de noticias con un protagonismo alto de esta.
+Asimismo, la centralidad de la IA baja durante los años. Podríamos pensar que mientras se va normalizando esta tecnología, aparece en más noticias como un tema secundario, mientras que al comienzo era el principal foco de atención.
 
 ### Orientación tecnológica por medio
 
@@ -603,7 +618,7 @@ grafico_5 <- df %>%
 grafico_5
 ```
 
-Se aprecian diferencias en la narrativa en torno a la IA presente en los medios: emol y medios regionales presentan un discurso tecnofílico más marcado, mientras que en bíobío predomina de forma más evidente la neutralidad.
+Vemos tendencias muy marcadas por medio. Mientras que Emol y medios regionales (ambos de El Mercurio) presentan una mucho mayor tecnofilia, bío bío se posiciona de forma más neutral en las noticias, con discursos más criticos frente a los otros medios. 
 
 ### Centralidad IA por medio
 
@@ -625,13 +640,13 @@ grafico_6 <- df %>%
 grafico_6
 ```
 
-Con respecto a la centralidad de la IA, también se aprecian diferencias entre los medios. El diario Emol, consistentemente con el análisis previo, tiende a resaltar la relevancia de la IA en sus noticias, mientras que en BioBio la centralidad baja es más predominante.
+De forma consistente, Emol y medios regionales suelen dar un rol central a la IA en sus noticias, mientras que en bío bío no se observa una tendencia clara.
 
 ### Análisis de actores
 
 #### Frecuencia de actores
 ```{r}
-grafico_actores_freq <- df_actores %>%
+grafico_actores_freq <- datos_actores %>%
   count(categoria) %>%
   mutate(categoria = fct_reorder(categoria, n)) %>%
   ggplot(aes(x = categoria, y = n)) +
@@ -647,9 +662,32 @@ grafico_actores_freq <- df_actores %>%
 print(grafico_actores_freq)
 ```
 
+Sobre los actores, vemos que las Empresas tecnológicas y los expertos están muy presentes en los discursos, mientras que la sociedad civil y los políticos tiene un rol bastante menor en la prensa. Aquí observamos algo interesante: La IA alucinó dos categorías, N/A y medio de comunicación. Ahora deberíamos revisar esos casos, volver a la instrucción, precisar más el promt (quizás agregando los medios de comunicación explícitamente dentro de las empresas no tecnológicas) y volver a correr el análisis.
+
+```{r}
+print(datos_actores |> filter(categoria=="N/A") |> select(nombre, titulo))
+
+print(datos_actores |> filter(categoria %in% c("Medio de Comunicación", "Medios de Comunicación")) |> select(nombre, titulo))
+
+print(datos_actores |> filter(str_detect(nombre, "AFP")) |> select(nombre, categoria, titulo))
+```
+
+Para N/A, no está pudiendo categorizar a autores de libros. Podríamos añadir una categoría de artistas, que no habíamos considerado por solitario. Para los medios, todos son radios o periódicos, exceptuando AFP y EFE. Deberíamos desarrollar una estrategia para estas. Agregaremos medio a Empresa no Tecnológica y crearemos manualmente la categoría de artistas y cultura.
+
+```{r}
+datos_actores <- datos_actores |> 
+  mutate(categoria = case_when(
+    categoria %in% c("Medio de Comunicación", "Medios de Comunicación") ~ "Empresa No Tecnológica",
+    categoria == "N/A" ~ "Artistas o cultura",
+        TRUE ~ categoria
+  ))
+
+
+```
+
 #### Relación entre tipos de actores y orientación tecnológica
 ```{r}
-grafico_actores_orientacion <- df_actores_unificados %>%
+grafico_actores_orientacion <- datos_actores %>%
   # Filtramos categorías con muy pocos casos para limpiar el gráfico (opcional)
   add_count(categoria) %>%
   filter(n >= 3) %>% 
@@ -674,10 +712,12 @@ grafico_actores_orientacion <- df_actores_unificados %>%
 print(grafico_actores_orientacion)
 ```
 
+Vemos dos tendencias muy marcadas: Sociedad civil se relaciona con noticias más tecnofóbicas, y las categorías empresariales con la tecnofilia. 
+
 #### Actores más mencionados
 ```{r}
 
-top_nombres <- df_actores_unificados %>%
+top_nombres <- datos_actores %>%
   filter(!is.na(nombre)) %>%
   count(nombre, sort = TRUE) %>%
   head(10)
@@ -703,26 +743,23 @@ mas_stop_words <- tibble(word = c(
   "ser", "allá", "análisis", "actúa", "hacia", "tecnología",
   "observa", "elemento", "foco", "cómo", "marco", "aborda", "utiliza", "posibles", "enmarcando", "utilizando", "construcción", "discursiva", "marcos", "narrativos",
   "principal", "recae", "presentando", "informativo", "tratamiento", "agenda", "mediática",
-  "eje", "central", "tema", "predominantemente", "asociados", "omitiendo", "manera", "mencionada"
+  "eje", "central", "tema", "predominantemente", "asociados", "omitiendo", "manera", "mencionada", "aunque", "torno", "enfoca", "interpretativo", "mención", "tono", "falta", "tecnológico", "práctica", "presentándola", "posicionando", "observan", "medio", "ámbito", "fuertemente", "interpretativos", "tecnofílicas", "tecnofílico", "tecnofílica", "tecnológicas", "posiciona", "marcadamente", "empresarial"
 ))
 
 stop_words_final <- bind_rows(lista_base, mas_stop_words)
 
 palabras_para_nube <- df %>%
-  # Separar en palabras individuales
   unnest_tokens(word, analisis) %>%
-  # Quitar espacios en blanco extra
   mutate(word = str_trim(word)) %>%
-  # Eliminar palabras que estén en nuestra lista de stop words
   anti_join(stop_words_final, by = "word") %>%
-  # Contar frecuencia
-  count(word, sort = TRUE)
+  count(word, sort = TRUE) |> 
+  slice_max(order_by = n, n = 70)
 
 wordcloud2(palabras_para_nube, size = 0.7, color = "random-dark")
 
 ```
 
-En el análisis realizado por Gemini, existe una prevalencia de ciertas palabras por sobre otras. La palabra tecnofílica es la más mencionada, sustentada en discursos relacionados con la "eficciencia", el "avance", los "beneficios" y el "desarrollo". Por otra parte, se destacan narrativas con un tono más crítico, con una alta frecuencia de palabras como "riesgos", "implicaciones" y "éticas".
+Vemos múltiples palabras relacionadas al deasrrollo y una visión positiva de la IA: innovación, motor, eficiencia, avance, desarrollo, etc. Por otro lado, la palabra riesgos es la más mencionada en el análisis, junto a limitaciones y desafíos por el lado de los discursos más pesimistas. Hay distintas palabras temáticas presentes, cómo éticos, laboral, sociales, mercado, humano, seguridad, gestión. 
 
 ### Bigramas análisis
 
@@ -753,51 +790,125 @@ grafico_6 <- bigramas_analisis %>%
 print(grafico_6)
 ```
 
-Observando el análisis de los bigramas, se obtiene una mirada más profunda del análisis realizado por el LLM. "Debates éticos", "implicaciones sociales" y "riesgos inherentes" son de los conceptos más frecuentemente utilizados en conjunto, conectados con la narrativa más alarmista en torno a los avances de la IA. Por otro lado, se encuentran conceptos como "avance tecnológico", "herramienta innovadora" "herramienta democratizadora" y "desarrollo económico", asociados al discurso tecnofílico. Encontrando otros marcos interpretativos que presentan las noticias, se observan conceptos como "competencia geopolítica", "propiedad intelectual", "mercado laboral" e incluso "ciencia ficción", siendo estos temas centrales en la discusión contemporánea sobre la IA.
+Observando el análisis de los bigramas, se obtiene una mirada más profunda del análisis realizado por el LLM. Podemos ver conceptos como "Herramienta fundamental", "crecimiento económico" o "beneficios potenciales" cómo temáticas que uno podría asociar más a la tecnofilia. Por el otro lado, se destaca el discurso negativo, con frases como "debates éticos" e "implicaciones sociales". Podemos mirar más bigramas si nos interesan más conceptos específicos.
+
+Por ejemplo, me interesan ver más bigramas sobre la orientación tecnofóbica, ya que al ser menos frecuente el gráfico la infrarrepresenta.
+
+```{r}
+# Tokenizar en pares de palabras (bigramas)
+bigramas_analisis <- df %>%
+  filter(orientacion_tecnologica=="tecnofobia") |> 
+  unnest_tokens(bigram, analisis, token = "ngrams", n = 2) %>%
+  # Separar para filtrar stopwords
+  separate(bigram, c("word1", "word2"), sep = " ") %>%
+  filter(!word1 %in% stop_words_final$word,
+         !word2 %in% stop_words_final$word) %>% 
+  # Unir de nuevo
+  unite(bigram, word1, word2, sep = " ") %>%
+  count(bigram, sort = TRUE)
+
+# Graficar los Top 15 bigramas
+grafico_7 <- bigramas_analisis %>%
+  head(20) %>%
+  mutate(bigram = reorder(bigram, n)) %>%
+  ggplot(aes(x = bigram, y = n)) +
+  geom_col(fill = "darkred") +
+  coord_flip() +
+  labs(title = "Frases más comunes en el análisis cualitativo",
+       subtitle = "Bigramas más frecuentes tecnofobia",
+       x = NULL, y = "Frecuencia") +
+  theme_minimal()
+
+print(grafico_7)
+```
+
+Vemos frases como sociedad civil, fuerza disruptiva o graves concecuencias. Podríamos ver también las palabras más frecuentes.  Aparece arte, pérdida, creación y seguridad.
+
+```{r}
+bigramas_analisis <- df %>%
+  filter(orientacion_tecnologica=="tecnofobia") |> 
+  unnest_tokens(bigram, analisis, token = "ngrams", n = 1) %>%
+  # Separar para filtrar stopwords
+  separate(bigram, c("word1", "word2"), sep = " ") %>%
+  filter(!word1 %in% stop_words_final$word,
+         !word2 %in% stop_words_final$word) %>% 
+  # Unir de nuevo
+  unite(bigram, word1, word2, sep = " ") %>%
+  count(bigram, sort = TRUE)
+
+# Graficar los Top 15 bigramas
+grafico_7 <- bigramas_analisis %>%
+  head(20) %>%
+  mutate(bigram = reorder(bigram, n)) %>%
+  ggplot(aes(x = bigram, y = n)) +
+  geom_col(fill = "darkred") +
+  coord_flip() +
+  labs(title = "Conceptos más comunes en el análisis cualitativo",
+       subtitle = "Palabras más frecuentes",
+       x = NULL, y = "Frecuencia") +
+  theme_minimal()
+
+print(grafico_7)
+```
+
+Tanto en los bigramas como en la nube de palabras deberíamos ir agregando palabras que generen ruido, como "enfatiza" en este caso.
 
 ### Búsqueda de casos relevantes
 
 Comúnmente, para reportar el análisis cualitativo y revisar la calidad de los análisis vamos a necesitar detectar donde aparecen estos conceptos clave en el análisis del LLM. De esta forma, podremos encotrar citas relevantes para evidenciar las narrativas que sustentan estos conceptos. Para esto, creamos una función sencilla de búsqueda.
 
 ```{r}
-concepto <- "democratizadora"
+concepto <- "crecimiento económico"
 
 busqueda <- df %>%
   filter(str_detect(analisis, concepto))
 
-print(busqueda |> select(titulo, medio, url, analisis))
+print(busqueda)
 ```
 
 Ahora, podemos revisar algúna(s) noticia que nos llame la atención particularmente. Podremos hacer esto con cada concepto clave en nuestro análisis. Podríamos ver también si estas noticias se asocian con una orientación tecnológica específica.
 
 ```{r}
-concepto <- "democratización"
+concepto <- "laboral"
 
 busqueda <- df %>%
   filter(str_detect(analisis, concepto)) |> 
-  select(titulo, medio, url, orientacion_tecnologica, analisis)
+  select(titulo, url, orientacion_tecnologica, analisis)
+
+summary(busqueda$orientacion_tecnologica)
+
+print(busqueda[22, ])
 ```
 
-También, podemos hacer búsquedas complejas. Por ejemplo, si quiero encontrar noticias con presencia de la sociedad civil y tecnofobia.
+Llamativamente, las noticias con el concepto laboral no tienen una marcada tecnofobia, pero revisando hay una que habla del reemplazo en de los trabajos. Podríamos centrarnos en esta destacando la gran falta de esta narrativa en los medios.
+
+También, podemos hacer búsquedas complejas. Por ejemplo, si quiero encontrar noticias de emol, con presencia de la sociedad civil y tecnofobia.
 
 ```{r}
 
-busqueda <- df_actores %>%
+busqueda <- datos_actores %>%
+  filter(medio == "emol") |> 
   filter(categoria == "Sociedad Civil") |> 
   filter(orientacion_tecnologica == "tecnofobia")
 
+print(busqueda)
 ```
 
 O si quiero ver la aparición de un concepto y tipo de actor (incluso podría buscar por nombre).
 ```{r}
+concepto <- "debates éticos"
 
-busqueda <- df_actores %>%
+busqueda <- datos_actores %>%
   filter(str_detect(analisis, concepto)) |> 
-  filter(categoria == "Sociedad Civil")
+  filter(categoria == "Academia / Expertos")
+
+print(busqueda)
 
 ```
 
-Hay muchisimas formas de explorar los resultados. El eje orientador son nuestros objetivos, nuestro marco teórico y nuestra imaginación. Podríamos utilizar algún modelo como tf_idf para ver conceptos más relevantes cuando aparecen ciertos actores o cuando hay cierta orientación tecnológica por ejemplo.
+Hay muchisimas formas de explorar los resultados. El eje orientador son nuestros objetivos, nuestro marco teórico y nuestra imaginación. Podríamos utilizar algún modelo como tf_idf para ver conceptos más relevantes cuando aparecen ciertos actores o cuando hay cierta orientación tecnológica. También, podríamos realizar bigramas o palabras más frecuentes según tipo de actor, centralidad, medio, etc.
+
+Al final de este análisis, me dieron ganas de añadir un campo de "Temática", para capturar si la noticia trata de economía, política, cultura, educación, etc. Este tipo de decisiones son clave para enriquecer los análisis, y comúnmente se nos ocurren luego de empezar a explorar los datos.
 
 ## Conclusión
 
@@ -808,13 +919,13 @@ Hay muchisimas formas de explorar los resultados. El eje orientador son nuestros
 
 ## Discusión
 
--   Si bien aún queda mucho camino por recorrer, aprender a utilizar este tipo de herramientas presenta grandes ventajas para la investigación cualitativa
+- Si bien aún queda mucho camino por recorrer, aprender a utilizar este tipo de herramientas presenta grandes ventajas para la investigación cualitativa
 - Mientras que existen limitaciones, al tomar los LLM como una herramienta más en el proceso de investigación podemos potenciar nuestras herramientas de análisis, ahorrar tiempo y poder resolver nuevas preguntas
 - Según nuestra experiencia, es más sencillo realizar esto con análisis deductivo, para reducir las alucinaciones y los posibles sesgos de los modelos y tener mayor injerencia en los resultados
 - El aprendizaje de estas herramientas abre nuevos horizontes para la investigación cualitativa y nos permite entrar en una discusión en la que muchas veces no formamos parte: cómo es el proceso en que un LLM toma cierta decisión
 - Por ello, es esencial utilizar estas herramientas desde plataformas que permitan configurar y parametrizar a nuestro gusto, no en los servicios que ofrecen las empresas
-- Por último, un gran problema con estas herramientas es el uso de datos para el entrenamiento de los modelos. Ahora usamos datos abiertos de la web, pero si se cuenta con entrevistas personales hay que ser mucho más cuidadoso. Respecto a esto, hay dos soluciones:
+- Por último, un gran problema con estas herramientas es el uso de datos para el entrenamiento de los modelos. Ahora usamos datos abiertos de la web, pero si se cuenta con entrevistas personales hay que ser mucho más cuidadosos. Respecto a esto, hay dos soluciones:
 1. Modelos open source que podemos utilizar desde infraestructura nuestra o en la nube (pero requiere capacidades técnicas mucho mayores)
-2. Plataformas con políticas de recolección de datos Zero Data Retention. Generalmente, son servicios que se dedican a vender APIs, y no guardan los datos que mandas. Encontramos dos que destacan:
-https://openrouter.ai/docs/guides/features/zdr 
-https://docs.fireworks.ai/guides/security_compliance/data_handling#response-api-data-retention
+2. Plataformas con políticas de recolección de datos Zero Data Retention. Generalmente, son servicios que se dedican a vender APIs, y no guardan los datos que mandas (existen certificaciones para esto). Encontramos dos que destacan:
+https://openrouter.ai/docs/guides/features/zdr
+https://docs.fireworks.ai/guides/security_compliance/data_handling
