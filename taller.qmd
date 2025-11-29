@@ -1,6 +1,6 @@
 ---
 title: "Taller"
-subtitle: "Gemini para análisis cualitativo escalable en R"
+subtitle: "Gemini para análisis cualitativo en R: Un flujo de trabajo colaborativo y escalable"
 author: "Ismael Aguayo y Exequiel Trujillo"
 date: today
 lang: en
@@ -20,8 +20,6 @@ format:
 bibliography: references.bib
 csl: apa.csl
 link-citations: true
-editor_options: 
-  chunk_output_type: console
 ---
 
 ## Antecedentes
@@ -51,13 +49,13 @@ editor_options:
 
 -   Por otro lado, están las plataformas para desarrolladores, comúnmente ofrecidas por las empresas a través de una Interfaz de Programación de Aplicaciones (API por sus siglas en inglés). A diferencia de los chatbots, las APIs cobran por cada llamada o mensaje enviado, y están diseñadas para poder desarrollar usos específicos de los LLM.
 
--   En este taller, utilizaremos este segundo enfoque, para aprovechar los beneficios que puede otorgar la Inteligencia Artificial, pero realizar los ajustes necesarios para mantener un flujo de investigación riguroso
+-   En este taller utilizaremos este segundo enfoque, para aprovechar los beneficios que puede otorgar la Inteligencia Artificial, pero manteniendo el control a la hora de procesar los datos y tomar las decisiones importantes en el análisis.
 
 ### LLMs para análisis cualitativo
 
--   Anteriormente, la forma de utilizar *text-as-data* más común era a través de modelos más básicos, con una menor capacidad de comprender el contexto amplio. Por ejemplo, para identificar tipos de consumidores en un dataset de comentarios, se podía ejecutar un LDA o un STM para modelar los tópicos subyacentes.
+-   Anteriormente, la forma de utilizar *text-as-data* más común era a través de modelos más básicos, con una menor capacidad de comprender el contexto amplio. Por ejemplo, para identificar tipos de consumidores en un dataset de comentarios, se podía ejecutar un LDA para modelar los tópicos subyacentes.
 
--   Desde la arquitectura transformers, la capacidad de comprensión del contexto se disparó, con algoritmos como BertTopic que aprovechan este avance para realizar tópicos que capturen una mayor complejidad.
+-   Desde la arquitectura transformers, la capacidad de comprensión del contexto se disparó, con algoritmos como BERTopic que aprovechan este avance para realizar tópicos que capturen una mayor complejidad.
 
 -   Sin embargo, los LLMs llevan esto a otro nivel, permitiendo realizar análisis profundo, cadenas de pensamiento, codificaciones y mapear redes entre actores. Softwares como Atlas.ti, ampliamente utilizado para el análisis cualitativo, ya integraron la codificación automática con GPT en sus útimas versiones.
 
@@ -71,7 +69,11 @@ editor_options:
 
     -   Para teoría fundamentada [@yue2025]
 
--   La adaptación de los métodos y su validación es algo que está recién comenzando, y mientras que los estudios han destacado una buena correspondencia entre los códigos que realizan los LLM y los humanos, se han presentado grandes limitaciones y recomendaciones
+-   Según @hayes2025 los LLMs tienen un potencial revolucionario para la investigación cualitativa, donde los investigadores pueden "conversar" con los datos y probar conexiones teóricas que podrían tardar meses.
+
+-   Estas potencialidades, en vez de reemplazar nuestras habilidades, las potencian, otorgándonos nuevas herramientas, mientras que el rol del sujeto se mantiene central en la parametrización, diseño de prompts, evaluación de outputs y creación de los marcos teóricos y operacionalizaciones adecuadas.
+
+-   La adaptación de los métodos y su validación es algo que está recién comenzando, y mientras que algunos estudios han destacado una buena correspondencia entre los códigos que realizan los LLM y los humanos, se han presentado limitaciones y recomendaciones
 
 -   **Limitaciones**
 
@@ -87,17 +89,23 @@ editor_options:
 
 ## Contenidos del taller
 
+En base a esto, el objetivo principal del taller es presentar un flujo de trabajo innovador para codificación cualitativa con LLMs, con un rol central del investigador en todo el proceso, y que puedan adaptar a múltiples casos de uso académicos y profesionales y distintas disciplinas. La gran mayoría de los análisis conducidos serán deductivos, para aplicar marcos teóricos relevantes y reducir la posibilidad de alucinación a través de prompting preciso.
+
+Como ejercicio práctico, utilizaremos noticias chilenas para buscar los encuadres mediáticos (*framing)*, o constructos sociales sobre la IA en medios chilenos populares. La unidad de análisis serán las noticias completas, pero podríamos realizar el mismo ejercicio separando por frases o por párrafos realizando un preprocesamiento de los datos. Esto se hace para reducir los tiempos de espera y la complejidad (muchos datos anidados). Este taller asume que tienen un conocimiento básico-intermedio de R, manejando tidyverse y manejo de dataframes y listas básico, y aunque intentaremos ser lo más explicativos, nos centraremos en lo más sustantivo.
+
 -   Configuración de la sesión y preparaciones necesarias
 
 -   Diseño y optimización de prompts, creación de criterios para evaluar los resultados de los LLMs
 
 -   Comprensión básica de los principales parámetros de los modelos
 
--   Creación de una función para aplicar el análisis cualitativo y automatización de esta a lo largo de un dataframe. Utilizaremos Gemini ya que otorga créditos gratis de la API.
+-   Creación de una función para aplicar el análisis y automatización de esta a lo largo de un dataframe. Utilizaremos Gemini ya que otorga créditos gratis de la API.
 
--   Análisis de la información obtenida
+-   Revisión de los resultados y estrategias de validación
 
-Todo el contenido del taller quedará a disposición posteriormente. El taller asume que tienen algunos conocimientos de R básicos-intermedios, cómo manejo de dataframes, funciones, iteraciones y el ecosistema tidyverse, por lo que no entraremos en mayores detalles sobre todos estos contenidos. El principal objetivo es que puedan realizar análisis cualitativo de forma automatizada utilizando LLMs a través de R, independientemente del área de estudios o el caso de uso que tengan, y logren adaptar las herramientas técnicas que les enseñaremos de forma sencilla.
+-   Análisis y estrategias de reporte
+
+Si no tienen una API KEY o tienen algún problema, hablen por el chat y les ayudaré. Ahora Exequiel presentará la primera parte aplicada del taller.
 
 ## Configuración de la sesión
 
@@ -116,7 +124,7 @@ Cargamos los datos del paquete datamedios (<https://exetrujillo.github.io/datame
 ```{r}
 datos <- datamedios::extraer_noticias_fecha("inteligencia artificial", "2025-11-1", "2025-11-25")
 
-# Si no te funciona datamedios puedes usar esto
+# Si no te funciona datamedios puedes usar esto. Debes saltarte los siguientes pasos hasta el muestreo.
 # noticias_muestra <- read.csv("noticias_muestra.csv")
 ```
 
@@ -148,12 +156,15 @@ Exploramos el dataframe de noticias y guardamos los datos brutos de la muestra.
 ```{r}
 head(noticias_muestra, 5)
 ```
+
 ```{r}
 #| eval: false
 write.csv(noticias_muestra, "noticias_muestra.csv")
 ```
 
 ## Configuramos Gemini
+
+Vamos a utilizar \`gemini.R\` [@kim2025], un paquete que nos abstrae de utilizar la API directamente, con funciones construidas útiles para hacer el análisis.
 
 Cargamos las variables de entorno, en particular la API key de Gemini. Además hacemos un test simple. Si recibimos la respuesta de Gemini entonces podemos pasar a lo siguiente.
 
@@ -168,10 +179,10 @@ gemini("¿Cuál es la diferencia entre la inteligencia artificial y la inteligen
 
 Configuramos los parámetros para el uso de la API.
 
--   **g_model:** En model se pueden usar varios para respuesta de texto, como "gemini-2.5-pro", "gemini-2.5-flash", "gemini-2.5-flash-lite", etc. Pueden revisar el listado completo [aquí](https://ai.google.dev/gemini-api/docs/models).
+-   **g_model:** En model se pueden usar varios para respuesta de texto, como "gemini-2.5-pro", "gemini-2.5-flash", "gemini-2.5-flash-lite", etc. Ahora está disponible la familia gemini 3. Pueden revisar el listado completo [aquí](https://ai.google.dev/gemini-api/docs/models).
 -   **g_temperature:** Podemos elegir también la temperatura para el modelo. Apunta a la objetividad-creatividad permitida en las respuestas. Números más cercanos a cero serían más "objetivos" y números más cercanos a dos serían más "creativos".
 -   **g_seed:** También podemos setear una semilla para hacer los resultados más reproducibles aunque no podemos asegurarlo completamente.
--   Otros parámetros que para este caso recomendamos no cambiarlos, sin emabrgo, su información puede encontrarse en la documentación de la API de Gemini.
+-   Existen otros parámetros que para este caso no recomendamos cambiarlos, sin embargo, su información puede encontrarse en la documentación de la API de Gemini.
 
 ```{r}
 # Parámetros configurables
@@ -188,64 +199,64 @@ g_seed = 42
 
 ## Prompts
 
-Cuando diseñamos prompts buscamos, por lo general, la respuesta a cierta pregunta o la resolución de algún problema. Además, la forma en la que diseñamos un prompt influye estructuralmente en la respuesta que podamos recibir de un modelo de LLM. En el presente taller haremos el ejercicio interactivo de intentar responder a la siguiente pregunta de investigación: *¿Cómo se configura la construcción social y mediática de la Inteligencia Artificial en el discurso noticioso actual en medios de prensa escritos de alto impacto en Chile?*
+Cuando diseñamos prompts buscamos, por lo general, la respuesta a cierta pregunta o la resolución de algún problema. La forma en la que diseñamos un prompt influye estructuralmente en la respuesta que podamos recibir de un modelo de LLM.
 
-En estricto rigor, Gemini no permite que le pasemos instrucciones de sistema, petición de texto y estructuras de respuesta por separado. Nosotros en este caso los separamos en objetos distintos solo para hacerlo más modular. Tenemos en este caso 3 partes, para comenzar a moldear las respuestas dependiendo de nuestro caso específico de estudio:
+En estricto rigor, el paquete que utilizamos no permite que le pasemos instrucciones de sistema, petición de texto y estructuras de respuesta por separado. Nosotros en este caso los separamos en objetos distintos solo para hacerlo más modular. Tenemos en este caso 3 partes, para comenzar a moldear las respuestas dependiendo de nuestro caso específico de estudio:
 
-1.  **system_prompt:** La idea es darle una idea específica de como "qué tipo de persona" tiene que comportarse y qué campos de conocimientos debe manejar para responder (es distinto preguntarle de inteligencia artificial a un experto en ciencias de la computación o a un periodista). Podemos utilizar este recurso para delimitar ciertos marcos teóricos y disciplinares al momento de esperar una respuesta.
+1.  **system_prompt:** Define el rol y forma de respuesta general del LLM. La idea es darle una idea específica de como "qué tipo de persona" tiene que comportarse y qué campos de conocimientos debe manejar para responder (es distinto preguntarle de inteligencia artificial a un experto en ciencias de la computación o a un periodista). Podemos utilizar este recurso para delimitar ciertos marcos teóricos y disciplinares al momento de esperar una respuesta.
 
-2.  **prompt_instruccion:** Como su nombre lo dice, las instrucciones específicas. En nuestro caso, aquí es donde operacionalizamos la pregunta de investigación. Debemos indicarle explícitamente al modelo qué dimensiones teóricas debe buscar. Aquí traducimos conceptos abstractos (como la construcción social o el encuadre mediático) en directrices concretas: evaluar si la tecnología se presenta como amenaza u oportunidad (tecnofobia/tecnofilia), identificar qué actores tienen voz (autoridad experta vs. sociedad civil) y detectar los sesgos latentes. Básicamente, esta sección funciona como nuestro libro de códigos o pauta de análisis cualitativo, asegurando que el modelo no divague, sino que interrogue al texto periodístico con un propósito definido.
+2.  **prompt_instruccion:** Como su nombre lo dice, las instrucciones específicas. En nuestro caso, aquí es donde operacionalizamos las dimensiones analíticas. Debemos indicarle explícitamente al modelo qué conceptos teóricos debe buscar. Aquí traducimos conceptos abstractos (como la construcción social o el encuadre mediático) en directrices concretas: evaluar si la tecnología se presenta como amenaza u oportunidad (tecnofobia/tecnofilia), identificar qué actores tienen voz y detectar los sesgos latentes. Básicamente, esta sección funciona como nuestro libro de códigos o pauta de análisis cualitativo, asegurando que el modelo no divague, sino que interrogue al texto periodístico con un propósito definido.
 
-3.  **json_estructura:** Finalmente, definimos el formato de salida. Aunque el análisis sea cualitativo, necesitamos sistematizar la información para poder trabajarla a escala en R. Al exigir una respuesta en formato JSON estricto, forzamos al modelo a sintetizar su razonamiento complejo en una estructura de datos legible por la máquina. En otras palabras, transformar cientos de análisis de texto individuales en un dataframe. Gracias a esto, podremos posteriormente calcular frecuencias, correlacionar variables (por ej. *¿un medio es más tecnofílico que otro? ¿los medios de la capital son más tecnofílicos que los de regiones rurales?*) y visualizar los hallazgos de nuestra investigación de manera cuantitativa.
+3.  **json_estructura:** Finalmente, definimos el formato de salida. Aunque el análisis sea cualitativo, necesitamos sistematizar la información para poder trabajarla a escala en R. Al exigir una respuesta en formato JSON estricto, forzamos al modelo a sintetizar su razonamiento complejo en una estructura de datos legible por la máquina. En otras palabras, podremos transformar cientos o miles de análisis de texto individuales en un dataframe. Gracias a esto, podremos posteriormente calcular frecuencias, encontrar relaciones entre variables (por ej. *¿un medio es más tecnofílico que otro?*) y utilizar técnicas de Procesamiento de Lenguage Natural para identificar hallazgos significativos.
 
 Nuestro propósito aquí es mostrar la estructura que usamos para que un LLM siga nuestras instrucciones como queremos, pero para cada caso de uso el tipo de prompt, los marcos teóricos, preguntas específicas y estructura de respuesta que pidamos será distinta.
 
 ```{r}
-system_prompt <- "Eres un científico social experto en análisis cualitativo con formación interdisciplinaria en sociología, antropología, ciencias políticas y ciencias de la comunicación. Tienes amplia experiencia en investigación de medios, análisis de discurso, estudios culturales y semiótica social. Posees la capacidad de examinar contenido mediático desde múltiples perspectivas teóricas, identificando marcos narrativos e interpretativos, agendas mediáticas, construcciones simbólicas y procesos de significación. Mantienes una perspectiva académica rigurosa y pensamiento crítico interdisciplinario."
+system_prompt <- "Eres un científico social experto en análisis cualitativo con formación interdisciplinaria en sociología, antropología, ciencias políticas y ciencias de la comunicación. Tienes amplia experiencia en investigación de medios, análisis de discurso, estudios culturales y semiótica social. Posees la capacidad de examinar contenido mediático desde múltiples perspectivas teóricas, identificando marcos narrativos e interpretativos, agendas mediáticas, construcciones simbólicas y procesos de significación. Mantienes una perspectiva académica rigurosa y pensamiento crítico interdisciplinario, fundamentando tus análisis en la evidencia proporcionada."
 
-prompt_instruccion <- "Analiza la siguiente noticia relacionada con inteligencia artificial desde una perspectiva de ciencias sociales y comunicación. Tu análisis debe ser profundo y reflexivo, examinando tanto el contenido explícito como los elementos implícitos y simbólicos.
+prompt_instruccion <- "Analiza la siguiente noticia relacionada con Inteligencia Artificial (IA) desde una perspectiva de ciencias sociales y comunicación.
 
 Requisitos para el análisis:
+- Evalúa la centralidad de la IA en la narrativa.
+- Identifica orientaciones tecnofóbicas, neutrales o tecnofílicas.
+- Examina cómo se representa la IA: capacidades, riesgos, limitaciones, beneficios.
+- Detecta sesgos, omisiones o énfasis en el discurso.
+- Identifica los actores sociales mencionados y clasifícalos.
 
-- Determina el rol específico que cumple la IA en la noticia: ¿es el tema central, un elemento secundario, o apenas se menciona?
-- Evalúa la centralidad de la IA en la narrativa y su relevancia real para el contenido
-- Identifica orientaciones tecnofóbicas o tecnofílicas en el tratamiento informativo
-- Examina cómo se representa la IA: sus capacidades, limitaciones, riesgos o beneficios
-- Analiza los marcos interpretativos y narrativos utilizados para contextualizar la tecnología
-- Detecta sesgos, omisiones o énfasis particulares en la construcción del discurso sobre IA
-- Considera las implicaciones sociales, económicas, políticas o éticas planteadas
-- Identifica actores sociales mencionados y sus posiciones respecto a la IA
-- Evalúa qué perspectivas están presentes o ausentes en el debate
-- Genera keywords conceptuales que capturen la esencia sociológica del contenido
-- Proporciona un resumen analítico que sintetice los hallazgos principales
+Clasifica a cada actor en una de las siguientes categorías:
+    1. Empresa Tecnológica (Ej: OpenAI, Google)
+    2. Empresa No Tecnológica (Ej: Retail, Minería)
+    3. Finanzas (Ej: Bancos, Fondos de inversión)
+    4. Sector Público (Ej: Ministerios, Agencias)
+    5. Políticos (Ej: Legisladores, Presidentes)
+    6. Academia / Expertos (Ej: Universidades, Investigadores)
+    7. Líder Empresarial (Personas: CEOs, Fundadores)
+    8. Sociedad Civil (ONGs, Ciudadanía)
 
-Mantén un enfoque crítico y académico, fundamentando tus observaciones únicamente en el contenido analizado."
+Genera un archivo JSON con los resultados."
 
-json_estructura <- 'Responde exclusivamente en formato JSON válido. Tu respuesta debe ser ÚNICAMENTE así, comenzando con "{" y terminando con "}". 
-
-** NO AGREGUES BLOQUES DE CÓDIGO EN TU RESPUESTA (de esas que tienen este caracter `)**
+json_estructura <- 'Responde exclusivamente en formato JSON válido. Tu respuesta debe ser ÚNICAMENTE el objeto JSON, comenzando con "{" y terminando con "}". 
 
 Consideraciones:
-  - Las keywords deben ser 5, ir en minúsculas y si se componen de más de una palabra llevan espacios entre ellas.
-  - Deben ser 5 actores principales, si no existe alguno entrega el campo igualmente con NULL.
-  - Si el rol de un actor no está relacionado con la IA indícalo explícitamente.
-  - Label: Máximo 3 palabras. Si la IA no es central en la noticia, los labels no deben estar relacionados con la IA.
+  - Las keywords deben ser exactamente 5, en minúsculas.
+  - Actores: Identifica HASTA 5 actores principales. Si hay menos, no rellenes con información falsa ni NULLs innecesarios, simplemente cierra la lista.
+  - Label: Máximo 3 palabras. Si la IA no es central, el label debe reflejar el tema real.
 
-Estructura:
-
+Estructura requerida:
 {
-  "keywords": ["palabra1", "palabra2", "palabra3"],
+  "keywords": ["palabra1", "palabra2", "palabra3", "palabra4", "palabra5"],
   "orientacion_tecnologica": "tecnofobia|tecnofilia|neutralidad",
   "centralidad_ia": "alta|media|baja",
   "actores_principales": [
     {
-      "nombre": "nombre_del_actor",
-      "rol_respecto_ia": "descripción_breve_de_su_posición_o_relación_con_ia"
+      "nombre": "nombre_exacto_en_texto",
+      "categoria": "Categoría Seleccionada",
+      "rol_respecto_ia": "descripción breve de su posición"
     }
   ],
-  "analisis": "Análisis conciso en 2-3 oraciones que sintetice los hallazgos más relevantes del enfoque sociológico y comunicacional.",
-  "label": "etiqueta_descriptiva_de_la_noticia"
-})
+  "analisis": "Análisis denso de 4 a 6 oraciones sintetizando los hallazgos sociológicos, el tono y los marcos interpretativos detectados.",
+  "label": "etiqueta_breve"
+}
 '
 ```
 
@@ -284,7 +295,7 @@ crear_prompt_completo <- function(fila_noticia) {
 }
 
 # Aquí ejecutamos
-prompt_example <- crear_prompt_completo(noticias_muestra[5,])
+prompt_example <- crear_prompt_completo(noticias_muestra[6,])
 example <- gemini(
   prompt_example,
   model = g_model,
@@ -293,7 +304,10 @@ example <- gemini(
 )
 
 cat(example)
+print(noticias_muestra$contenido_limpio[6])
 ```
+
+Analicemos la respuesta: ¿Hay algún problema que detectemos? ¿Algo que no funcione como esperábamos? El prompt final que obtuvimos es el resultado de un proceso de prueba y error, en donde diferentes ajustes fueron realizados. Deberíamos observar varias noticias distintas para ver como funciona, y probar si en distintos intentos el modelo está respondiendo de forma similar. Si queremos que se centre en otras facetas del discurso, lo esencial está en esta etapa de evaluación, en donde la meta es asegurarnos que el LLM esté logrando cubrir nuestros objetivos de investigación de forma satisfactoria.
 
 ## Iteración guardando en una lista
 
@@ -330,10 +344,10 @@ for (i in 1:nrow(noticias_muestra)){
 }
 ```
 
-Revisamos el caso de la quinta fila, que debiese ser muy parecido al del ejemplo inicial. Una posible vía de validación es que en diferentes llamadas un mismo caso va a dar resultados similares, aunque al tratarse de LLM es imposible asegurar una total repoducibilidad.
+Revisamos el caso de la sexta fila, que debiese ser muy parecido al del ejemplo inicial. Un tip: para ahorrar recursos, podemos realizar un análisis a una menor escala, ver si funciona correctamente, y luego ejecutarlo en todos los datos. Para la versión final, también podríamos utilizar un modelo de razonamiento, para asegurarnos que los resultados definitivos sean los más correctos.
 
 ```{r}
-cat(lista_respuestas[[5]])
+cat(lista_respuestas[[6]])
 ```
 
 ## Limpieza y aplanamiento
@@ -364,6 +378,7 @@ aplanar_elemento <- function(elemento) {
     
     # Información de actores (concatenamos todo)
     actores_nombres = paste(elemento$actores_principales$nombre, collapse = "; "),
+    actores_categorias = paste(elemento$actores_principales$categoria, collapse = "; "),
     actores_roles = paste(elemento$actores_principales$rol_respecto_ia, collapse = "; "),
     
     stringsAsFactors = FALSE
@@ -380,34 +395,73 @@ Finalmente podemos unificar en un dataframe para tener la información original 
 datos_unificados <- bind_cols(noticias_muestra, df_proc)
 ```
 
+Para la información de los actores, guardaremos los dataframes que tenemos dentro de las listas en formato long junto a información de las noticias.
+
+```{r}
+
+extraer_actores_long <- function(i, noticias, lista_json) {
+  info_noticia <- noticias[i, ] %>% 
+    select(titulo, medio, url)
+  elemento_llm <- lista_json[[i]]
+  
+  actores_df <- elemento_llm$actores_principales
+  # Si no hay actores o está vacío, saltamos esta noticia
+  if (is.null(actores_df) || length(actores_df) == 0 || nrow(actores_df) == 0) {
+    return(NULL)
+  }
+  
+  actores_df$orientacion_tecnologica <- elemento_llm$orientacion_tecnologica
+
+  actores_df$analisis <- elemento_llm$analisis
+
+  resultado <- bind_cols(info_noticia, actores_df)
+  
+  return(resultado)
+}
+
+df_actores_unificados <- purrr::map_dfr(
+  1:nrow(noticias_muestra), 
+  ~extraer_actores_long(.x, noticias_muestra, lista_proc)
+)
+
+head(df_actores_unificados)
+
+```
+
 Y podemos guardar los datos (●'◡'●)
 
 ```{r}
 #| eval: false
 
 write.csv(datos_unificados, "datos_analizados.csv")
+write.csv(df_actores_unificados, "datos_actores.csv")
 # Aquí también podemos importar el csv
 # datos_unificados <- read.csv("datos_analizados.csv")
 ```
 
-## Análisis descriptivos
+## Análisis y estrategias de reporte
 
-Por motivos pedagógicos, vamos a cargar una base de datos más grande preprocesada por gemini (n=249), entre 2023 y 2025.
+Por motivos pedagógicos, vamos a cargar una base de datos más grande preprocesada por gemini (n=250), entre fines del 2022 y 2025.
+
+Uno de los principales desafíos al utilizar estas herramientas es poder entender el análisis realizado. Para esto, podemos utilizar diversas herramientas de análisis descriptivo y Procesamiento de Lenguaje Natural para identificar conceptos clave, y posteriormente profundizar en los puntos más relevantes para nuestros objetivos.
 
 ```{r}
-datos_descriptivos <- read.csv("datos_descriptivos.csv")
+datos_descriptivos <- read.csv("datos_analisis.csv")
+datos_actores <- read.csv("datos_actores_analisis.csv")
 ```
 
-Observamos la frecuencia de los datos a lo largo del tiempo. 
+Observamos la frecuencia de los datos a lo largo del tiempo.
+
 ```{r}
 datamedios::grafico_notas_fecha(datos_descriptivos, titulo="Noticias a lo largo del tiempo en los datos", agrupar_por = "month", tema = "dark")
 
 datamedios::grafico_comparacion_medios(datos_descriptivos, titulo = "Comparación medios a lo largo del tiempo", agrupar_por = "month", tema = "dark")
 ```
 
-Tenemos más datos de bíobío que de otros medios debido a su frecuencia de publicación. El medio guioteca tiene muy pocas noticias, por lo que no se puede interpretar mucho
+Tenemos más datos de bíobío que de otros medios debido a su frecuencia de publicación. El medio guioteca tiene muy pocas noticias, por lo que no se puede interpretar mucho.
 
 ### Preprocesamiento
+
 ```{r}
 
 df <- datos_descriptivos %>%
@@ -427,6 +481,7 @@ colores_centralidad <- c("baja" = "#7008E7",
 ```
 
 ### Frecuencia de orientación tecnológica
+
 ```{r}
 
 grafico_1 <- df %>%
@@ -487,7 +542,7 @@ grafico_3 <- df_tiempo %>%
 grafico_3
 ```
 
-Las tendencias se mantienen en el tiempo, con la neutralidad consistentemente siendo la categoía más alta, y la tecnofilia y la tecnofobia presentando picos en ciertos momentos. 
+Las tendencias se mantienen en el tiempo, con la neutralidad consistentemente siendo la categoía más alta, y la tecnofilia y la tecnofobia presentando picos en ciertos momentos.
 
 ### Centralidad IA a través del tiempo
 
@@ -529,6 +584,7 @@ grafico_4
 De la misma forma, la centralidad de la IA se mantiene relativamente constante a lo largo del tiempo, aunque en 2023 hubo una mayor cantidad de noticias con un protagonismo alto de esta.
 
 ### Orientación tecnológica por medio
+
 ```{r}
 grafico_5 <- df %>%
   count(medio, orientacion_tecnologica) %>%
@@ -547,7 +603,7 @@ grafico_5 <- df %>%
 grafico_5
 ```
 
-Se aprecian diferencias en la narrativa en torno a la IA presente en los medios: emol y medios regionales presentan un discurso tecnofílico más marcado, mientras que en bíobío predomina de forma más evidente la neutralidad. 
+Se aprecian diferencias en la narrativa en torno a la IA presente en los medios: emol y medios regionales presentan un discurso tecnofílico más marcado, mientras que en bíobío predomina de forma más evidente la neutralidad.
 
 ### Centralidad IA por medio
 
@@ -569,7 +625,66 @@ grafico_6 <- df %>%
 grafico_6
 ```
 
-Con respecto a la centralidad de la IA, también se aprecian diferencias entre los medios. El diario Emol, consistentemente con el análisis previo, tiende a resaltar la relevancia de la IA en sus noticias, mientras que en BioBio la centralidad baja es más predominante. 
+Con respecto a la centralidad de la IA, también se aprecian diferencias entre los medios. El diario Emol, consistentemente con el análisis previo, tiende a resaltar la relevancia de la IA en sus noticias, mientras que en BioBio la centralidad baja es más predominante.
+
+### Análisis de actores
+
+#### Frecuencia de actores
+```{r}
+grafico_actores_freq <- df_actores %>%
+  count(categoria) %>%
+  mutate(categoria = fct_reorder(categoria, n)) %>%
+  ggplot(aes(x = categoria, y = n)) +
+  geom_col(fill = "steelblue") +
+  geom_text(aes(label = n), hjust = -0.5, size = 3.5) +
+  coord_flip() +
+  labs(title = "Actores predominantes en las noticias sobre IA",
+       subtitle = "Frecuencia de mención por categoría",
+       x = NULL, y = "Número de menciones") +
+  theme_minimal() +
+  theme(panel.grid.major.y = element_blank())
+
+print(grafico_actores_freq)
+```
+
+#### Relación entre tipos de actores y orientación tecnológica
+```{r}
+grafico_actores_orientacion <- df_actores_unificados %>%
+  # Filtramos categorías con muy pocos casos para limpiar el gráfico (opcional)
+  add_count(categoria) %>%
+  filter(n >= 3) %>% 
+  
+  count(categoria, orientacion_tecnologica) %>%
+  group_by(categoria) %>%
+  mutate(prop = n / sum(n)) %>%
+  ungroup() %>%
+  
+  ggplot(aes(x = categoria, y = prop, fill = orientacion_tecnologica)) +
+  geom_col(position = "fill") +
+  scale_y_continuous(labels = scales::percent) +
+  scale_fill_manual(values = colores_orientacion) +
+  coord_flip() +
+  labs(title = "Orientación Tecnológica por Tipo de Actor",
+       subtitle = "Cómo se asocian los distintos actores a las narrativas (Tecnofilia vs Tecnofobia)",
+       x = NULL, y = "Proporción",
+       fill = "Orientación") +
+  theme_minimal() +
+  theme(legend.position = "top")
+
+print(grafico_actores_orientacion)
+```
+
+#### Actores más mencionados
+```{r}
+
+top_nombres <- df_actores_unificados %>%
+  filter(!is.na(nombre)) %>%
+  count(nombre, sort = TRUE) %>%
+  head(10)
+
+print(top_nombres)
+
+```
 
 ### Nube de palabras columna análisis
 
@@ -640,17 +755,66 @@ print(grafico_6)
 
 Observando el análisis de los bigramas, se obtiene una mirada más profunda del análisis realizado por el LLM. "Debates éticos", "implicaciones sociales" y "riesgos inherentes" son de los conceptos más frecuentemente utilizados en conjunto, conectados con la narrativa más alarmista en torno a los avances de la IA. Por otro lado, se encuentran conceptos como "avance tecnológico", "herramienta innovadora" "herramienta democratizadora" y "desarrollo económico", asociados al discurso tecnofílico. Encontrando otros marcos interpretativos que presentan las noticias, se observan conceptos como "competencia geopolítica", "propiedad intelectual", "mercado laboral" e incluso "ciencia ficción", siendo estos temas centrales en la discusión contemporánea sobre la IA.
 
+### Búsqueda de casos relevantes
+
+Comúnmente, para reportar el análisis cualitativo y revisar la calidad de los análisis vamos a necesitar detectar donde aparecen estos conceptos clave en el análisis del LLM. De esta forma, podremos encotrar citas relevantes para evidenciar las narrativas que sustentan estos conceptos. Para esto, creamos una función sencilla de búsqueda.
+
+```{r}
+concepto <- "democratizadora"
+
+busqueda <- df %>%
+  filter(str_detect(analisis, concepto))
+
+print(busqueda |> select(titulo, medio, url, analisis))
+```
+
+Ahora, podemos revisar algúna(s) noticia que nos llame la atención particularmente. Podremos hacer esto con cada concepto clave en nuestro análisis. Podríamos ver también si estas noticias se asocian con una orientación tecnológica específica.
+
+```{r}
+concepto <- "democratización"
+
+busqueda <- df %>%
+  filter(str_detect(analisis, concepto)) |> 
+  select(titulo, medio, url, orientacion_tecnologica, analisis)
+```
+
+También, podemos hacer búsquedas complejas. Por ejemplo, si quiero encontrar noticias con presencia de la sociedad civil y tecnofobia.
+
+```{r}
+
+busqueda <- df_actores %>%
+  filter(categoria == "Sociedad Civil") |> 
+  filter(orientacion_tecnologica == "tecnofobia")
+
+```
+
+O si quiero ver la aparición de un concepto y tipo de actor (incluso podría buscar por nombre).
+```{r}
+
+busqueda <- df_actores %>%
+  filter(str_detect(analisis, concepto)) |> 
+  filter(categoria == "Sociedad Civil")
+
+```
+
+Hay muchisimas formas de explorar los resultados. El eje orientador son nuestros objetivos, nuestro marco teórico y nuestra imaginación. Podríamos utilizar algún modelo como tf_idf para ver conceptos más relevantes cuando aparecen ciertos actores o cuando hay cierta orientación tecnológica por ejemplo.
+
 ## Conclusión
 
-- Revisamos los avances recientes de la IA y sus aplicaciones al análisis de texto
-- Aprendimos un flujo de trabajo automatizado para realizar análisis cualitativo en grandes volúmenes de texto, aplicable para múltiples disciplinas y a través de diferentes modelos
-- Profundizamos en distintas prácticas para el correcto funcionamiento de estas tecnologías, como el uso de prompts precisos y estructurados
-- Procesamos estos datos para poder analizarlos en R, y observamos diferentes alternativas básicas para visualizarlos e interpretarlos
+-   Revisamos los avances recientes de la IA y sus aplicaciones al análisis de texto
+-   Aprendimos un flujo de trabajo automatizado para realizar análisis cualitativo en grandes volúmenes de texto, aplicable para múltiples disciplinas y a través de diferentes modelos
+-   Profundizamos en distintas prácticas para el correcto funcionamiento de estas tecnologías, como el uso de prompts precisos y estructurados, y el rol central del investigador en el proceso
+-   Procesamos estos datos para poder analizarlos en R, y observamos diferentes alternativas básicas para explorar los datos, analizarlos y sacar conclusiones.
 
-## Discusión 
+## Discusión
 
-- Si bien aún queda mucho camino por recorrer, aprender a utilizar este tipo de herramientas presenta grandes ventajas para la investigación cualitativa
-- En la discusión reciente, se han destacado desafíos para implementar estas herramientas. 
-- Entre los más relevantes, se encuentra el problema de la validación de los códigos generados, los posibles sesgos algorítmicos y de entrenamiento y la utilización de datos para entrenamiento.
-- Para enfrentar estos problemas, es necesario estar informado, experimentar y continuar indagando sobre las potencialidades de estas herramientas. Sin duda alguna, el futuro del análisis cualitativo tendrá una mucho mayor presencia de LLMs, ya que reducen considerablemente la carga de trabajo y abren posibilidades de análisis antes inimaginables, y se encuentran en un acelerado desarrollo.
-- El uso correcto de estas tecnologías debe ser con una colaboración fuerte entre humano y máquina, y no algo meramente automático. Es crucial que aprendamos a utilizarlas en entornos que nos permitan tomar las decisiones importantes, y no desde las plataformas de consumo, en donde estas opciones vendrán por defecto.
+-   Si bien aún queda mucho camino por recorrer, aprender a utilizar este tipo de herramientas presenta grandes ventajas para la investigación cualitativa
+- Mientras que existen limitaciones, al tomar los LLM como una herramienta más en el proceso de investigación podemos potenciar nuestras herramientas de análisis, ahorrar tiempo y poder resolver nuevas preguntas
+- Según nuestra experiencia, es más sencillo realizar esto con análisis deductivo, para reducir las alucinaciones y los posibles sesgos de los modelos y tener mayor injerencia en los resultados
+- El aprendizaje de estas herramientas abre nuevos horizontes para la investigación cualitativa y nos permite entrar en una discusión en la que muchas veces no formamos parte: cómo es el proceso en que un LLM toma cierta decisión
+- Por ello, es esencial utilizar estas herramientas desde plataformas que permitan configurar y parametrizar a nuestro gusto, no en los servicios que ofrecen las empresas
+- Por último, un gran problema con estas herramientas es el uso de datos para el entrenamiento de los modelos. Ahora usamos datos abiertos de la web, pero si se cuenta con entrevistas personales hay que ser mucho más cuidadoso. Respecto a esto, hay dos soluciones:
+1. Modelos open source que podemos utilizar desde infraestructura nuestra o en la nube (pero requiere capacidades técnicas mucho mayores)
+2. Plataformas con políticas de recolección de datos Zero Data Retention. Generalmente, son servicios que se dedican a vender APIs, y no guardan los datos que mandas. Encontramos dos que destacan:
+https://openrouter.ai/docs/guides/features/zdr 
+https://docs.fireworks.ai/guides/security_compliance/data_handling#response-api-data-retention
